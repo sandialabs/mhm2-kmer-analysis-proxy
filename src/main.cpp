@@ -75,6 +75,18 @@ using std::setprecision;
 
 using namespace upcxx_utils;
 
+// Needed to give compiler definition of environment, because we're moving towards portable ISO C++
+#ifdef _WIN32
+  // MSVC exports _environ instead of environ
+  extern char** _environ;
+  #define environ _environ
+#else
+  // POSIX‐style global
+  extern char** environ;
+#endif
+
+
+
 void init_devices();
 void done_init_devices();
 void teardown_devices();
@@ -391,20 +403,61 @@ void print_log_results(string output_dir, double elapsed_time) {
   csv.close();
 }
 
+// Call this function before Kokkos::initialize(...)
+bool parsePrintConfigFlag(int argc, char* argv[]) {
+  // 1) Default off
+  bool kokkosPrintConfig = false;
+
+  // 2) Check environment variable KOKKOS_PRINT_CONFIG
+  if (const char* env = std::getenv("KOKKOS_PRINT_CONFIG")) {
+    std::string e(env);
+    // simple check: accept "1", "true", "on" (case-sensitive here)
+    if (e == "1" || e == "true" || e == "on") {
+      kokkosPrintConfig = true;
+    }
+  }
+
+  // 3) Scan command-line for --kokkos-print-config
+  for (int i = 1; i < argc; ++i) {
+    if (std::strcmp(argv[i], "--kokkos-print-config") == 0) {
+      kokkosPrintConfig = true;
+    }
+    // you could also handle --no-kokkos-print-config to explicitly disable
+    if (std::strcmp(argv[i], "--no-kokkos-print-config") == 0) {
+      kokkosPrintConfig = false;
+    }
+  }
+
+  return kokkosPrintConfig;
+}
 
 
-int main(int argc, char **argv, char **envp) {
+int main(int argc, char* argv[]) {
   BaseTimer total_timer("Total Time", nullptr);  // no PromiseReduce possible
   auto init_timings = init_upcxx(total_timer);
   auto am_root = !rank_me();
   Options options;
 
 #ifdef ENABLE_KOKKOS
-  Kokkos::initialize(argc, argv);
-  double kokkos_elapsed_time;
-  Kokkos::Timer kokkos_timer;
-  {
+  // Decide once (e.g. from a cmd-line flag, env var, or hard-coded)
+  bool kokkosPrintConfig = parsePrintConfigFlag(argc, argv);
+
+  if (kokkosPrintConfig) {							// KOKKOS INITIALIZE
+    auto settings = Kokkos::InitializationSettings()
+                      .set_print_configuration(true);
+    Kokkos::initialize(settings);
+  }
+  else {
+    // Use the argc/argv overload if not printing configuration
+    Kokkos::initialize(argc, argv);
+    }
+    // start timing
+    double kokkos_elapsed_time;
+    Kokkos::Timer kokkos_timer;
+    {	// OPEN KOKKOS
 #endif
+
+
 
 #ifdef CIDS_FROM_HASH
     SWARN("Generating contig IDs with hashing - this could result in duplicate CIDs and should only be used for checking "
@@ -426,7 +479,7 @@ int main(int argc, char **argv, char **envp) {
     if (!options.load(argc, argv)) return 127;
     print_exec_cmd(argc, argv);
     vector<string> envvars;
-    for (char **env = envp; *env != 0; env++) {
+    for (char** env = environ; *env != nullptr; env++) {
       if (!strncmp(*env, "GASNET", strlen("GASNET"))) envvars.push_back(string(*env));
       if (!strncmp(*env, "UPCXX", strlen("UPCXX"))) envvars.push_back(string(*env));
       if (!strncmp(*env, "FI_", strlen("FI_"))) envvars.push_back(string(*env));
@@ -482,19 +535,10 @@ int main(int argc, char **argv, char **envp) {
     SLOG_VERBOSE("Total time before close and finalize: ", total_timer.get_elapsed_since_start(), "\n");
     SLOG_VERBOSE("All ranks flushed logs: ", sh_flush_timings->to_string(), "\n");
 
-#ifdef ENABLE_KOKKOS
-    // test_kokkos();
-  }
-#endif
-
   BaseTimer finalize_timer("upcxx::finalize", nullptr);  // no PromiseReduce possible
   finalize_timer.start();
   upcxx::finalize();
 
-#ifdef ENABLE_KOKKOS
-  kokkos_elapsed_time = kokkos_timer.seconds();
-  Kokkos::finalize();
-#endif
 
   finalize_timer.stop();
   total_timer.stop();
@@ -503,11 +547,17 @@ int main(int argc, char **argv, char **envp) {
          << finalize_timer.get_elapsed() << " s)" << endl;
 
 #ifdef ENABLE_KOKKOS
+    kokkos_elapsed_time = kokkos_timer.seconds();	// KOKKOS RUNTIME
     print_log_results(options.output_dir, kokkos_elapsed_time);
 #else
     print_log_results(options.output_dir, total_timer.get_elapsed());
 #endif
   }
+
+#ifdef ENABLE_KOKKOS
+   Kokkos::finalize();		// KOKKOS FINALIZE
+  } // CLOSE KOKKOS
+#endif
 
   return 0;
 }

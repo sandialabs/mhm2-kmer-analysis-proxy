@@ -229,7 +229,7 @@ endif()
 
 option(UPCXX_VERBOSE "" ON)
 set(MIN_UPCXX_VERSION
-    "2023.9.1"
+    "2023.9.0"
     CACHE STRING "Minimum version of UPCXX required for MHM2")
 find_package(UPCXX ${MIN_UPCXX_VERSION})
 if(NOT UPCXX_FOUND)
