@@ -295,7 +295,7 @@ check_submodules(zstr upcxx-utils) # todo klign
 
 # set version
 include_directories(include src)
-#get_git_version(MHM2)
+get_git_version(MHM2)
 
 # add upcxx-utils
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/upcxx-utils/CMakeLists.txt")

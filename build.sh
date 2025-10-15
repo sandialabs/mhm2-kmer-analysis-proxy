@@ -46,60 +46,35 @@ elif [ "$1" == "clean" ]; then
     # if this isn't removed then the the rebuild will not work
     rm -rf $INSTALL_PATH/cmake
     exit 0
-# -----------------------------------------------------------------------------
-# Main build logic: clean, configure, build, test (optional), install
-# -----------------------------------------------------------------------------
 else
-  # ensure build dir exists and cd into it
-  mkdir -p "$rootdir"/.build
-  cd "$rootdir"/.build
-
-  # pick up testing=1 for Debug or RelWithDebInfo
-  testing=0
-  if [[ "$1" == "Debug" || "$1" == "RelWithDebInfo" ]]; then
-    testing=1
-  fi
-
-  # check that $1 is a valid build type
-  if [[ "$1" != "Debug" && "$1" != "Release" && "$1" != "RelWithDebInfo" ]]; then
-    echo "Error: Unknown build type '$1'" >&2
-    echo "Usage: $0 [clean|cleanall|Debug|Release|RelWithDebInfo] [<extra cmake flags>]" >&2
-    exit 1
-  fi
-
-  # clean out previous build files and old CMake wrapper state
-  rm -rf ./*                       # clean build tree
-  rm -rf "$INSTALL_PATH"/cmake     # ensure fresh CMake install scripts
-
-  # configure
-  cmake "$rootdir" \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-    -DCMAKE_BUILD_TYPE="$1" \
-    -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH" \
-    -DMHM2_ENABLE_TESTING="$testing" \
-    -DCMAKE_CXX_STANDARD=17 \
-    -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wno-deprecated-declarations -std=c++17" \
-    $MHM2_CMAKE_EXTRAS \
-    "${@:2}" \
-  |& tee configure.log
-
-  # determine parallel job count once
-  : "${MHM2_BUILD_THREADS:=$(nproc)}"
-  echo "Building with $MHM2_BUILD_THREADS threads..."
-
-  # build & (optionally) test & install in one go
-  cmake --build . \
-        --parallel "$MHM2_BUILD_THREADS" \
-        --target all           # builds everything
-  if [[ "$testing" == "1" ]]; then
-    ctest --output-on-failure
-  fi
-  cmake --build . \
-        --parallel "$MHM2_BUILD_THREADS" \
-        --target install       # install into $INSTALL_PATH
-
-  # rename binary if needed
-  if [[ "$BINARY" != "mhm2" ]]; then
-    mv -f "$INSTALL_PATH"/bin/mhm2 "$INSTALL_PATH"/bin/"$BINARY"
-  fi
+    mkdir -p $rootdir/.build
+    cd $rootdir/.build
+    testing=0
+    if [ "$1" == "Debug" ] || [ "$1" == "RelWithDebInfo" ]; then
+      testing=1
+    fi
+    if [ "$1" == "Debug" ] || [ "$1" == "Release" ] || [ "$1" == "RelWithDebInfo" ]; then
+        rm -rf *
+        rm -rf $INSTALL_PATH/cmake
+        # CMake Build Command
+        cmake $rootdir \
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+          -DCMAKE_BUILD_TYPE=$1 \
+          -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
+          -DMHM2_ENABLE_TESTING=$testing \
+          -DCMAKE_CXX_STANDARD=17 \
+          -DCMAKE_CXX_FLAGS="-Wall -Wno-deprecated-declarations -std=c++17" \
+          $MHM2_CMAKE_EXTRAS "${@:2}"
+    fi
+    #make -j ${MHM2_BUILD_THREADS} all || make VERBOSE=1 all
+    make -j ${MHM2_BUILD_THREADS} all
+    if [ "$testing" == "1" ] ; then
+       make check
+    fi
+    make -j ${MHM2_BUILD_THREADS} install
+    if [ "$BINARY" != "mhm2" ]; then
+        mv -f $INSTALL_PATH/bin/mhm2 $INSTALL_PATH/bin/${BINARY}
+    fi
 fi
+
+echo "Build took $((SECONDS))s"
