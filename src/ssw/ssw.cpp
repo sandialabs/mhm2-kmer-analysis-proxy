@@ -5,6 +5,7 @@
 #include "ssw.hpp"
 #include "ssw_core.hpp"
 
+#include <cassert>
 #include <sstream>
 #include <cassert>
 
@@ -137,7 +138,7 @@ int CalculateNumberMismatch(StripedSmithWaterman::Alignment* al, int8_t const* r
       new_cigar_string << al->query_begin << 'S';
       query += al->query_begin;
     }
-  }  // else it will be processed normally
+  }                   // else it will be processed normally
 
   bool in_M = false;  // the previous is match
   bool in_X = false;  // the previous is mismatch
@@ -253,6 +254,7 @@ Aligner::Aligner(void)
     : score_matrix_(NULL)
     , score_matrix_size_(5)
     , translation_matrix_(NULL)
+    , translation_matrix_size_(0)
     , match_score_(2)
     , mismatch_penalty_(2)
     , gap_opening_penalty_(3)
@@ -269,6 +271,7 @@ Aligner::Aligner(const uint8_t& match_score, const uint8_t& mismatch_penalty, co
     : score_matrix_(NULL)
     , score_matrix_size_(5)
     , translation_matrix_(NULL)
+    , translation_matrix_size_(0)
     , match_score_(match_score)
     , mismatch_penalty_(mismatch_penalty)
     , gap_opening_penalty_(gap_opening_penalty)
@@ -289,6 +292,7 @@ Aligner::Aligner(const int8_t* score_matrix, const int& score_matrix_size, const
     , mismatch_penalty_(2)
     , gap_opening_penalty_(3)
     , gap_extending_penalty_(1)
+    , ambiguity_penalty_(0)
     , translated_reference_(NULL)
     , reference_length_(0) {
   score_matrix_ = new int8_t[score_matrix_size_ * score_matrix_size_];
@@ -297,23 +301,30 @@ Aligner::Aligner(const int8_t* score_matrix, const int& score_matrix_size, const
   memcpy(translation_matrix_, translation_matrix, sizeof(int8_t) * translation_matrix_size);
 }
 
-Aligner::Aligner(const Aligner& aligner) {
-  match_score_ = aligner.match_score_;
-  mismatch_penalty_ = aligner.mismatch_penalty_;
-  gap_opening_penalty_ = aligner.gap_opening_penalty_;
-  gap_extending_penalty_ = aligner.gap_extending_penalty_;
-  ambiguity_penalty_ = aligner.ambiguity_penalty_;
-
-  translated_reference_ = nullptr;
-  reference_length_ = 0;
-
-  score_matrix_size_ = aligner.score_matrix_size_;
+Aligner::Aligner(const Aligner& aligner)
+    : score_matrix_(NULL)
+    , score_matrix_size_(aligner.score_matrix_size_)
+    , translation_matrix_(NULL)
+    , match_score_(aligner.match_score_)
+    , mismatch_penalty_(aligner.mismatch_penalty_)
+    , gap_opening_penalty_(aligner.gap_opening_penalty_)
+    , gap_extending_penalty_(aligner.gap_extending_penalty_)
+    , ambiguity_penalty_(aligner.ambiguity_penalty_)
+    , translated_reference_(NULL)
+    , reference_length_(0) {
+  
+  assert (aligner.score_matrix_ != NULL);
+  assert(score_matrix_size_ > 0);
+  assert(score_matrix_size_ < 100);
   score_matrix_ = new int8_t[score_matrix_size_ * score_matrix_size_];
+  
   memcpy(score_matrix_, aligner.score_matrix_, sizeof(int8_t) * score_matrix_size_ * score_matrix_size_);
 
+  assert(aligner.translation_matrix_ != NULL);
   auto translation_matrix_size = SizeOfArray(kBaseTranslation);
   translation_matrix_ = new int8_t[translation_matrix_size];
   memcpy(translation_matrix_, aligner.translation_matrix_, sizeof(int8_t) * translation_matrix_size);
+  
 }
 
 Aligner::~Aligner(void) { Clear(); }
@@ -482,20 +493,24 @@ bool Aligner::ReBuild(std::string scores) {
 bool Aligner::ReBuild(const int8_t* score_matrix, const int& score_matrix_size, const int8_t* translation_matrix,
                       const int& translation_matrix_size) {
   ClearMatrices();
+  score_matrix_size_ = score_matrix_size;
   score_matrix_ = new int8_t[score_matrix_size_ * score_matrix_size_];
   memcpy(score_matrix_, score_matrix, sizeof(int8_t) * score_matrix_size_ * score_matrix_size_);
-  translation_matrix_ = new int8_t[translation_matrix_size];
-  memcpy(translation_matrix_, translation_matrix, sizeof(int8_t) * translation_matrix_size);
+  translation_matrix_size_ = translation_matrix_size;
+  translation_matrix_ = new int8_t[translation_matrix_size_];
+  memcpy(translation_matrix_, translation_matrix, sizeof(int8_t) * translation_matrix_size_);
 
   return true;
 }
 
 void Aligner::BuildDefaultMatrix(void) {
   ClearMatrices();
+  assert(score_matrix_size_ == 5);
   score_matrix_ = new int8_t[score_matrix_size_ * score_matrix_size_];
   BuildSwScoreMatrix(match_score_, mismatch_penalty_, ambiguity_penalty_, score_matrix_);
-  translation_matrix_ = new int8_t[SizeOfArray(kBaseTranslation)];
-  memcpy(translation_matrix_, kBaseTranslation, sizeof(int8_t) * SizeOfArray(kBaseTranslation));
+  translation_matrix_size_ = SizeOfArray(kBaseTranslation);
+  translation_matrix_ = new int8_t[translation_matrix_size_];
+  memcpy(translation_matrix_, kBaseTranslation, sizeof(int8_t) * translation_matrix_size_);
 }
 
 void Aligner::ClearMatrices(void) {

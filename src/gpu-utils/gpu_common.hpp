@@ -44,6 +44,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <cassert>
 
 #include "gpu_compatibility.hpp"
 
@@ -105,45 +106,69 @@ class GPUTimer {
 };
 
 template <typename T>
-inline __device__ T warpReduceSum(T val, int n) {
-  unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
-#ifdef HIP_GPU
-  for (int offset = warpSize / 2; offset > 0; offset /= 2) val += __shfl_down(val, offset);
-#endif
+inline __device__ T warpReduceSum(T val) {
 #ifdef CUDA_GPU
-  unsigned mask = __ballot_sync(0xffffffff, threadid < n);
-  for (int offset = warpSize / 2; offset > 0; offset /= 2) val += __shfl_down_sync(mask, val, offset);
+  const unsigned int FULL_WARP_MASK = 0xffffffff;
+  unsigned mask = FULL_WARP_MASK;
 #endif
+  for (int offset = warpSize / 2; offset > 0; offset /= 2) {
+#ifdef HIP_GPU
+    // HIP/ROCm: use __shfl_down with explicit width parameter
+    // Future ROCm versions may deprecate the version without width
+    val += __shfl_down(val, offset, warpSize);
+#elif defined(CUDA_GPU)
+    // CUDA: use __shfl_down_sync with full warp mask
+    // Required for sm_70+ (Volta and later, including Blackwell sm_100)
+    // Using fixed full mask is simpler and avoids potential issues with __ballot_sync
+#if __CUDA_ARCH__ < 700
+    val += __shfl_down(val, offset);      // pre-Volta path (removed in sm_70+).
+#else
+    val += __shfl_down_sync(mask, val, offset); // new path
+#endif
+#else
+    static_assert(false, "Must define HIP_GPU or CUDA_GPU");
+#endif
+  }
   return val;
-};
+}
+
 
 template <typename T>
-inline __device__ T blockReduceSum(T val, int n) {
-  static __shared__ T shared[32];  // Shared mem for 32 partial sums
+inline __device__ T blockReduceSum(T val) {
+  // Derive max warps from hardware limits:
+  // - Max block size: 1024 threads (CUDA and HIP)
+  // - Min warp size: 32 (CUDA=32 always, HIP=32 or 64)
+  // - Therefore max warps = 1024 / 32 = 32
+  constexpr int MAX_BLOCK_SIZE = 1024;
+  constexpr int MIN_WARP_SIZE = 32;
+  constexpr int MAX_WARPS = MAX_BLOCK_SIZE / MIN_WARP_SIZE;
+  static __shared__ T shared[MAX_WARPS];  // Shared mem for partial sums
   int lane_id = threadIdx.x % warpSize;
   int warp_id = threadIdx.x / warpSize;
+  assert(warp_id < MAX_WARPS);
+  int num_warps = (blockDim.x + warpSize - 1) / warpSize;  // ceiling division
 
-  val = warpReduceSum(val, n);  // Each warp performs partial reduction
+  val = warpReduceSum(val);  // Each warp performs partial reduction
 
   if (lane_id == 0) shared[warp_id] = val;  // Write reduced value to shared memory
 
   __syncthreads();  // Wait for all partial reductions
 
   // read from shared memory only if that warp existed
-  val = (threadIdx.x < blockDim.x / warpSize) ? shared[lane_id] : 0;
+  val = (threadIdx.x < num_warps) ? shared[lane_id] : 0;
 
-  if (warp_id == 0) val = warpReduceSum(val, n);  // Final reduce within first warp
+  if (warp_id == 0) val = warpReduceSum(val); // reduce across active warps
   __syncthreads();
   return val;
 };
 
-inline __device__ void reduce(uint32_t count, int num, uint32_t *result) {
-  uint32_t block_num = blockReduceSum(count, num);
+inline __device__ void reduce(uint32_t count, uint32_t *result) {
+  uint32_t block_num = blockReduceSum(count);
   if (threadIdx.x == 0) atomicAdd(result, block_num);
 }
 
-inline __device__ void reduce(uint64_t count, int num, uint64_t *result) {
-  unsigned long long int block_num = blockReduceSum(count, num);
+inline __device__ void reduce(uint64_t count, uint64_t *result) {
+  unsigned long long int block_num = blockReduceSum(count);
   if (threadIdx.x == 0) atomicAdd((unsigned long long int *)result, block_num);
 }
 

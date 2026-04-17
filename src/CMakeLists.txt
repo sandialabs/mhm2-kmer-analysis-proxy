@@ -77,7 +77,7 @@ if(ENABLE_CUDA)
   message(STATUS "Building for GPUs with CUDA")
 
   set(CMAKE_CUDA_STANDARD
-      14
+      17
       CACHE STRING "")
   set(CMAKE_CUDA_STANDARD_REQUIRED
       ON
@@ -93,19 +93,24 @@ if(ENABLE_CUDA)
   enable_language(CUDA)
   set(MHM2_MIN_CUDA_ARCH 70)
 
-  if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.18)
+  if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.24)
     if(NOT CMAKE_CUDA_ARCHITECTURES)
-      include(FindCUDA/select_compute_arch)
-      cuda_detect_installed_gpus(INSTALLED_GPU_CCS_1)
-      string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
-      string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
-      string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
-      set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
-      message(
-        STATUS "Autodetect CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}"
-      )
+	set(CMAKE_CUDA_ARCHITECTURES native)
+        message(STATUS "Using native CMAKE_CUDA_ARCHITECTURES detection")
     endif()
-    message(STATUS "Using CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
+    elseif(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.18)
+     if(NOT CMAKE_CUDA_ARCHITECTURES)
+       include(FindCUDA/select_compute_arch)
+       cuda_detect_installed_gpus(INSTALLED_GPU_CCS_1)
+       string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
+       string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
+       string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
+      set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+       message(
+         STATUS "Autodetect CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}"
+       )
+     endif()
+     message(STATUS "Using CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
   else()
     find_package(CUDA REQUIRED)
     cuda_select_nvcc_arch_flags(ARCH_FLAGS_LIST)

@@ -103,7 +103,20 @@
 #define FuncGetAttribute hipFuncGetAttribute
 #define FuncAttributeMaxDynamicSharedMemorySize hipFuncAttributeMaxDynamicSharedMemorySize
 
+inline int getDeviceClockRate(int deviceId) {
+  int clockRate;
+  hipDeviceGetAttribute(&clockRate, hipDeviceAttributeClockRate, deviceId);
+  return clockRate;
+}
+
+inline int getDeviceMemoryClockRate(int deviceId) {
+  int memClockRate;
+  hipDeviceGetAttribute(&memClockRate, hipDeviceAttributeMemoryClockRate, deviceId);
+  return memClockRate;
+}
+
 #endif
+
 #ifdef CUDA_GPU
 #include <cuda_runtime_api.h>
 #include <cuda.h>
@@ -161,4 +174,15 @@
 #define FuncGetAttribute cudaFuncGetAttribute
 #define FuncAttributeMaxDynamicSharedMemorySize cudaFuncAttributeMaxDynamicSharedMemorySize
 
+inline int getDeviceClockRate(int deviceId) {
+  int clockRate;
+  cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, deviceId);
+  return clockRate;
+}
+
+inline int getDeviceMemoryClockRate(int deviceId) {
+  int memClockRate;
+  cudaDeviceGetAttribute(&memClockRate, cudaDevAttrMemoryClockRate, deviceId);
+  return memClockRate;
+}
 #endif

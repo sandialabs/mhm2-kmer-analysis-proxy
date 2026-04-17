@@ -71,13 +71,9 @@
 
 // #define __PPC64__
 
-// Kokkos
-#ifdef ENABLE_KOKKOS
-#include <type_traits>
-#include <limits>
-#endif
-
-#if defined(__PPC64__)
+#if defined(__aarch64__) || defined(__ARM_NEON) || defined(_M_ARM64)
+#include "sse2neon/sse2neon.h"  // From https://github.com/DLTcollab/sse2neon
+#elif defined(__PPC64__)
 #include "sse_to_altivec.hpp"
 #elif defined(__x86_64__)
 #include <emmintrin.h>

@@ -98,10 +98,6 @@ static DeviceProp &get_gpu_properties(int device_id = -1) {
 }
 
 void gpu_utils::set_gpu_device(int rank_me) {
-#ifdef ENABLE_KOKKOS
-  return;
-#endif
-
   if (rank_me == -1) {
     std::cerr << KLRED "Cannot set GPU device for rank -1; device is not yet initialized\n" KNORM;
     exit(1);
@@ -218,7 +214,7 @@ string gpu_utils::get_gpu_device_descriptions() {
     os << "  UUID: " << uuids[i] << "\n";
     os << "  PCI domainID: " << prop.pciDomainID << "\n";
     os << "  Compute capability: " << prop.major << "." << prop.minor << "\n";
-    os << "  Clock Rate: " << prop.clockRate << "kHz\n";
+    os << "  Clock Rate: " << getDeviceClockRate(i) << "kHz\n";
     os << "  Total SMs: " << prop.multiProcessorCount << "\n";
 #ifdef CUDA_GPU
     os << "  MultiGPUBoardGroupID: " << prop.multiGpuBoardGroupID << "\n";
@@ -232,7 +228,7 @@ string gpu_utils::get_gpu_device_descriptions() {
     os << "  Max threads per SM: " << prop.maxThreadsPerMultiProcessor << "\n";
     os << "  L2 Cache Size: " << prop.l2CacheSize << " bytes\n";
     os << "  Total Global Memory: " << prop.totalGlobalMem << " bytes\n";
-    os << "  Memory Clock Rate: " << prop.memoryClockRate << " kHz\n\n";
+    os << "  Memory Clock Rate: " << getDeviceMemoryClockRate(i) << " kHz\n\n";
 
     os << "  Max threads per block: " << prop.maxThreadsPerBlock << "\n";
     os << "  Max threads in X-dimension of block: " << prop.maxThreadsDim[0] << "\n";

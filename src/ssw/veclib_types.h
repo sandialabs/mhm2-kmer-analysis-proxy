@@ -23,12 +23,6 @@
 extern "C" {
 #endif  // __cplusplus
 
-// Kokkos
-#ifdef ENABLE_KOKKOS
-#include <type_traits>
-#include <limits>
-#endif
-
 /******************************************************************************/
 
 /** Control Macros **/
@@ -60,7 +54,6 @@ extern "C" {
 #ifdef __GNUC__
 /* GCC version */
 #define __GCC_VERSION__ (__GNUC__ * 100 + __GNUC_MINOR__ * 10 + __GNUC_PATCHLEVEL__)
-#pragma message "__GCC_VERSION__:  " __GCC_VERSION__
 #endif
 
 /* Control double precision */
@@ -135,13 +128,13 @@ typedef VECLIB_ALIGNED16 struct {
 
 /** Parameter Types **/
 
-typedef const long intlit;  /* general int literal */
-typedef const long intlit1; /* 1 bit int literal */
-typedef const long intlit2; /* 2 bit int literal */
-typedef const long intlit3; /* 3 bit int literal */
-typedef const long intlit4; /* 4 bit int literal */
-typedef const long intlit5; /* 5 bit int literal */
-typedef const long intlit8; /* 8 bit int literal */
+typedef const long intlit;   /* general int literal */
+typedef const long intlit1;  /* 1 bit int literal */
+typedef const long intlit2;  /* 2 bit int literal */
+typedef const long intlit3;  /* 3 bit int literal */
+typedef const long intlit4;  /* 4 bit int literal */
+typedef const long intlit5;  /* 5 bit int literal */
+typedef const long intlit8;  /* 8 bit int literal */
 
 typedef const long uintlit;  /* general unsigned int literal */
 typedef const long uintlit1; /* 1 bit unsigned int literal */

@@ -63,7 +63,8 @@ else
           -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
           -DMHM2_ENABLE_TESTING=$testing \
           -DCMAKE_CXX_STANDARD=17 \
-          -DCMAKE_CXX_FLAGS="-Wall -Wno-deprecated-declarations -std=c++17" \
+          -DCMAKE_CXX_FLAGS="-Wall -Wno-deprecated-declarations" \
+	  -DCMAKE_CXX_COMPILER=mpicxx \
           $MHM2_CMAKE_EXTRAS "${@:2}"
     fi
     #make -j ${MHM2_BUILD_THREADS} all || make VERBOSE=1 all
