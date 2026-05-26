@@ -58,7 +58,7 @@ endif()
 message("Building ${CMAKE_BUILD_TYPE} version")
 
 set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -Wno-sign-compare -Wno-unused-function -Wno-catch-value"
+    "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -Wno-sign-compare -Wno-unused-function"
     # "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -Wno-sign-compare
     # -Wno-unused-function -Wno-deprecated-gpu-targets
     # -Wno-unused-command-line-argument"
@@ -182,8 +182,13 @@ endif()
 get_directory_property(dir_defs COMPILE_DEFINITIONS)
 get_directory_property(dir_compile_opts COMPILE_OPTIONS)
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" flags_var)
+# in proxy, & not parent
+string(REPLACE ";" " " dir_compile_opts_str "${dir_compile_opts}")
+string(REPLACE "\"" "" cxx_flags_str "${CMAKE_CXX_FLAGS}")
+string(REPLACE "\"" "" build_flags_str "${${flags_var}}")
+
 set(all_defs
-    "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ENABLE_CUDA=${ENABLE_CUDA} ENABLE_HIP=${ENABLE_HIP} COMPILE_OPTIONS='${dir_compile_opts}' CMAKE_CXX_FLAGS='${CMAKE_CXX_FLAGS}' ${flags_var}='${${flags_var}}'"
+    "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ENABLE_CUDA=${ENABLE_CUDA} ENABLE_HIP=${ENABLE_HIP} COMPILE_OPTIONS=${dir_compile_opts_str} CMAKE_CXX_FLAGS=${cxx_flags_str} ${flags_var}=${build_flags_str}"
 )
 message("Definitions:")
 foreach(d ${dir_defs})

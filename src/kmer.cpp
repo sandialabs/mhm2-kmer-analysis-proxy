@@ -356,7 +356,9 @@ uint64_t Kmer<MAX_K>::get_minimizer_fast(int m, const Kmer<MAX_K> *revcomp) cons
 
   int base;
   const int num_candidates = revcomp == nullptr ? 1 : Kmer::k - m + 1;
-  uint64_t revcomp_candidates[num_candidates];
+  const int max_candidates = MAX_BUILD_KMER;
+  assert(num_candidates <= max_candidates);
+  uint64_t revcomp_candidates[max_candidates];
   if (revcomp != nullptr) {
     // calculate and temporarily store all revcomp minimizer candidates on the stack
     for (base = 0; base <= Kmer::k - m; base += chunk_step) {

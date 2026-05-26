@@ -535,29 +535,34 @@ int main(int argc, char* argv[]) {
     SLOG_VERBOSE("Total time before close and finalize: ", total_timer.get_elapsed_since_start(), "\n");
     SLOG_VERBOSE("All ranks flushed logs: ", sh_flush_timings->to_string(), "\n");
 
+
+  // Finalize Kokkos before UPC++ so all backend/device work and Kokkos-managed
+  // resources are fully torn down before the communication runtime shuts down.
+
+  #ifdef ENABLE_KOKKOS
+	Kokkos::fence();
+	kokkos_elapsed_time = kokkos_timer.seconds();	// KOKKOS RUNTIME
+	if (am_root) {
+	  print_log_results(options.output_dir, kokkos_elapsed_time);
+	}
+    }	// CLOSE KOKKOS
+	Kokkos::finalize();	// KOKKOS FINALIZE
+  #else
+	if (am_root) {
+	  print_log_results(options.output_dir, total_timer.get_elapsed());
+	}
+  #endif
+
   BaseTimer finalize_timer("upcxx::finalize", nullptr);  // no PromiseReduce possible
   finalize_timer.start();
   upcxx::finalize();
-
-
   finalize_timer.stop();
+
   total_timer.stop();
   if (am_root) {
     cout << "Total time: " << fixed << setprecision(3) << total_timer.get_elapsed() << " s (upcxx::finalize in "
          << finalize_timer.get_elapsed() << " s)" << endl;
-
-#ifdef ENABLE_KOKKOS
-    kokkos_elapsed_time = kokkos_timer.seconds();	// KOKKOS RUNTIME
-    print_log_results(options.output_dir, kokkos_elapsed_time);
-#else
-    print_log_results(options.output_dir, total_timer.get_elapsed());
-#endif
   }
-
-#ifdef ENABLE_KOKKOS
-   Kokkos::finalize();		// KOKKOS FINALIZE
-  } // CLOSE KOKKOS
-#endif
 
   return 0;
 }

@@ -57,6 +57,8 @@
 #include "stage_timers.hpp"
 #include "kmer_dht.hpp"
 
+#include <type_traits>  // for std::is_trivial and std::is_trivially_copyable
+
 using namespace std;
 using namespace upcxx;
 using namespace upcxx_utils;
@@ -101,12 +103,25 @@ void Supermer::unpack() {
 
 int Supermer::get_bytes() { return seq.length() + sizeof(kmer_count_t); }
 
+
+// Return the extra per-element byte estimate needed by the aggregation store
+// for non-trivial types. Trivial/trivially-copyable/trivially-serializable
+// types need no extra estimate; types like Supermer, which contain std::string,
+// need a conservative nonzero estimate for dynamically owned storage.
+template <typename T, int MAX_K>
+constexpr size_t aggr_extra_bytes() {
+  return (std::is_trivial<T>::value || std::is_trivially_copyable<T>::value ||
+          upcxx::is_trivially_serializable<T>::value)
+             ? 0
+             : 2 * MAX_K;
+}
+
 template <int MAX_K>
 KmerDHT<MAX_K>::KmerDHT(uint64_t my_num_kmers, size_t my_num_ctg_kmers, size_t max_kmer_store_bytes, int max_rpcs_in_flight,
                         bool use_qf, int sequencing_depth)
     : local_kmers(KmerMap<MAX_K>{})
     , ht_inserter(HashTableInserter<MAX_K>{})
-    , kmer_store()
+    , kmer_store(aggr_extra_bytes<Supermer, MAX_K>())
     , max_kmer_store_bytes(max_kmer_store_bytes)
     , my_num_kmers(my_num_kmers)
     , my_num_ctg_kmers(my_num_ctg_kmers)

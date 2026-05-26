@@ -64,13 +64,15 @@ else
           -DMHM2_ENABLE_TESTING=$testing \
           -DCMAKE_CXX_STANDARD=17 \
           -DCMAKE_CXX_FLAGS="-Wall -Wno-deprecated-declarations" \
-	  -DCMAKE_CXX_COMPILER=mpicxx \
+          ${CC:+-DCMAKE_C_COMPILER=$CC} \
+          ${CXX:+-DCMAKE_CXX_COMPILER=$CXX} \
           $MHM2_CMAKE_EXTRAS "${@:2}"
     fi
     #make -j ${MHM2_BUILD_THREADS} all || make VERBOSE=1 all
     make -j ${MHM2_BUILD_THREADS} all
     if [ "$testing" == "1" ] ; then
-       make check
+       ctest --output-on-failure
+       #make check
     fi
     make -j ${MHM2_BUILD_THREADS} install
     if [ "$BINARY" != "mhm2" ]; then
