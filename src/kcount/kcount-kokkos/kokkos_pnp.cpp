@@ -349,8 +349,6 @@ kcount_gpu::ParseAndPackGPUDriver::ParseAndPackGPUDriver(int upcxx_rank_me, int 
 
   twins_v = Kokkos::View<uint64_t[256]>("twins_array");
   //Kokkos::View<uint64_t[256]>::HostMirror h_twins_v = Kokkos::create_mirror_view(twins_v);
-  // Use type deduction for the host mirror to avoid relying on older nested
-  // Kokkos View typedefs such as ::HostMirror, which are not portable across releases.
   auto h_twins_v = Kokkos::create_mirror_view(twins_v);
   for (int i = 0; i < 256; i++) {
     h_twins_v(i) = KOKKOS_TWINS[i];

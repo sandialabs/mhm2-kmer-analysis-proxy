@@ -709,7 +709,6 @@ void KmerExtsMap<MAX_K>::init(int64_t ht_capacity) {
 
 template <int MAX_K>
 void KmerExtsMap<MAX_K>::clear() {
-  // unsure is this will be needed
 }
 
 template <int MAX_K>
@@ -814,11 +813,6 @@ void HashTableGPUDriver<MAX_K>::init(int upcxx_rank_me, int upcxx_rank_n, int km
 
   packed_elem_buff_dev.seqs_v = Kokkos::View<char *>("packed_elem_buff_dev_seqs", KCOUNT_GPU_HASHTABLE_BLOCK_SIZE);
   unpacked_elem_buff_dev.seqs_v = Kokkos::View<char *>("unpacked_elem_buff_dev_seqs", KCOUNT_GPU_HASHTABLE_BLOCK_SIZE * 2);
-
-  /* DELETEME
-  packed_elem_buff_dev.counts_v = Kokkos::View<count_t *>("packed_elem_buff_dev_counts");
-  unpacked_elem_buff_dev.counts_v = Kokkos::View<count_t *>("unpacked_elem_buff_dev_counts");
-  */
   
   // In the original CUDA implementation, counts are null on the read-kmer
   // path. Model that here with explicit empty Views.
@@ -834,11 +828,6 @@ void HashTableGPUDriver<MAX_K>::init(int upcxx_rank_me, int upcxx_rank_n, int km
   warnings = log_warnings.str();
 
   twins_v = Kokkos::View<uint64_t[256]>("twins_array");
-  // DELETEME
-  //Kokkos::View<uint64_t[256]>::HostMirror h_twins_v = Kokkos::create_mirror_view(twins_v);
-  //
-  // Let Kokkos provide the appropriate mirror type rather than relying on
-  // older nested View::HostMirror typedefs.
   auto h_twins_v = Kokkos::create_mirror_view(twins_v);
   for (int i = 0; i < 256; i++) {
     h_twins_v(i) = KOKKOS_TWINS[i];
@@ -881,9 +870,6 @@ void HashTableGPUDriver<MAX_K>::insert_supermer_block() {
 
   Kokkos::deep_copy(packed_elem_buff_dev.seqs_v, elem_buff_host.h_seqs_v);
 
-  // DELETEME
-  //Kokkos::deep_copy(unpacked_elem_buff_dev.seqs_v, 0);
-  //
   // Clear the unpack buffer before use; make the fill value explicit for the
   // char View element type.
   Kokkos::deep_copy(unpacked_elem_buff_dev.seqs_v, char(0));
@@ -954,14 +940,8 @@ void HashTableGPUDriver<MAX_K>::done_all_inserts(uint64_t &num_dropped, uint64_t
   purge_invalid(num_purged, num_entries);
   read_kmers_dev.num = num_entries;
 
-  /*DELETE ME
-  elem_buff_host.h_seqs_v = Kokkos::View<char *>::HostMirror();
-  elem_buff_host.h_counts_v = Kokkos::View<count_t *>::HostMirror();
-  */
-  // Reset host buffers without depending on older nested View::HostMirror
-  // typedefs.
-  elem_buff_host.h_seqs_v = {};
-  elem_buff_host.h_counts_v = {};
+  elem_buff_host.h_seqs_v = decltype(elem_buff_host.h_seqs_v)();
+  elem_buff_host.h_counts_v = decltype(elem_buff_host.h_counts_v)();
   packed_elem_buff_dev.seqs_v = Kokkos::View<char *>();
   packed_elem_buff_dev.counts_v = Kokkos::View<count_t *>();
   unpacked_elem_buff_dev.seqs_v = Kokkos::View<char *>();

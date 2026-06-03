@@ -81,21 +81,10 @@ struct SupermerBuff {
   // char *seqs;
   // count_t *counts;
   Kokkos::View<char *> seqs_v;
-  //
-  //DELETEME
-  //Kokkos::View<char *>::HostMirror h_seqs_v;
-  // Use explicit host-space Views instead of older nested View::HostMirror
-  // typedefs for portability across Kokkos releases.
-  //
-  Kokkos::View<char *, Kokkos::DefaultHostExecutionSpace::memory_space> h_seqs_v;
+  Kokkos::View<char *>::host_mirror_type h_seqs_v;
 
   Kokkos::View<count_t *> counts_v;
-  //
-  //DELETEME
-  //
-  //
-  //Kokkos::View<count_t *>::HostMirror h_counts_v;
-  Kokkos::View<count_t *, Kokkos::DefaultHostExecutionSpace::memory_space> h_counts_v;
+  Kokkos::View<count_t *>::host_mirror_type h_counts_v;
 };
 
 // Bytes used per element:
@@ -153,18 +142,10 @@ class HashTableGPUDriver {
   int upcxx_rank_n;
   int kmer_len;
   uint64_t buff_len = 0;
-  // std::vector<KmerArray<MAX_K>> output_keys;
-  // std::vector<CountExts> output_vals;
-  //
-  // DELETEME
-  //
-  //typename Kokkos::View<KmerArray<MAX_K> *>::HostMirror output_keys_v;
-  //typename Kokkos::View<CountExts *>::HostMirror output_vals_v;
-  
-  // Store output buffers as explicit host-space Views rather than relying on
-  // older nested View::HostMirror typedefs.
-  Kokkos::View<KmerArray<MAX_K> *, Kokkos::DefaultHostExecutionSpace::memory_space> output_keys_v;
-  Kokkos::View<CountExts *, Kokkos::DefaultHostExecutionSpace::memory_space> output_vals_v;
+
+  typename Kokkos::View<KmerArray<MAX_K> *>::host_mirror_type output_keys_v;
+  typename Kokkos::View<CountExts *>::host_mirror_type output_vals_v;
+
   size_t output_index = 0;
 
   KmerCountsMap<MAX_K> read_kmers_dev;
