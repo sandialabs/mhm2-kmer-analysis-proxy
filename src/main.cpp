@@ -450,14 +450,16 @@ int main(int argc, char* argv[]) {
   else {
     // Use the argc/argv overload if not printing configuration
     Kokkos::initialize(argc, argv);
-    }
-    // start timing
-    double kokkos_elapsed_time;
-    Kokkos::Timer kokkos_timer;
-    {	// OPEN KOKKOS
+  }
+  // start timing after Kokkos initialization
+  double kokkos_elapsed_time = 0.0;
+  Kokkos::Timer kokkos_timer;
 #endif
 
-
+  // Scope application objects so they are destroyed before finalizing
+  // Kokkos and UPC++.
+  {
+    Options options;
 
 #ifdef CIDS_FROM_HASH
     SWARN("Generating contig IDs with hashing - this could result in duplicate CIDs and should only be used for checking "
@@ -535,22 +537,22 @@ int main(int argc, char* argv[]) {
     SLOG_VERBOSE("Total time before close and finalize: ", total_timer.get_elapsed_since_start(), "\n");
     SLOG_VERBOSE("All ranks flushed logs: ", sh_flush_timings->to_string(), "\n");
 
-
-  // Finalize Kokkos before UPC++ so all backend/device work and Kokkos-managed
-  // resources are fully torn down before the communication runtime shuts down.
+    // Record timing and write summary before leaving the application scope.
+  #ifdef ENABLE_KOKKOS
+    Kokkos::fence();
+    kokkos_elapsed_time = kokkos_timer.seconds();   // KOKKOS RUNTIME
+    if (am_root) {
+      print_log_results(options.output_dir, kokkos_elapsed_time);
+    }
+  #else
+    if (am_root) {
+      print_log_results(options.output_dir, total_timer.get_elapsed());
+    }
+  #endif
+     } // end application scope
 
   #ifdef ENABLE_KOKKOS
-	Kokkos::fence();
-	kokkos_elapsed_time = kokkos_timer.seconds();	// KOKKOS RUNTIME
-	if (am_root) {
-	  print_log_results(options.output_dir, kokkos_elapsed_time);
-	}
-    }	// CLOSE KOKKOS
-	Kokkos::finalize();	// KOKKOS FINALIZE
-  #else
-	if (am_root) {
-	  print_log_results(options.output_dir, total_timer.get_elapsed());
-	}
+    Kokkos::finalize();   // KOKKOS FINALIZE
   #endif
 
   BaseTimer finalize_timer("upcxx::finalize", nullptr);  // no PromiseReduce possible

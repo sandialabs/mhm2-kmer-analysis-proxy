@@ -72,18 +72,30 @@ class ParseAndPackGPUDriver {
   Kokkos::View<char *> dev_packed_seqs_v;
   Kokkos::View<unsigned int> dev_num_supermers_v;
   Kokkos::View<unsigned int> dev_num_valid_kmers_v;
-
+/*
+ * DELETEME?
   Kokkos::View<char *>::HostMirror h_seqs_v;
   Kokkos::View<char *>::HostMirror h_packed_seqs_v;
   Kokkos::View<unsigned int>::HostMirror h_num_valid_kmers_v;
+*/
+
+  Kokkos::View<char *, Kokkos::DefaultHostExecutionSpace::memory_space> h_seqs_v;
+  Kokkos::View<char *, Kokkos::DefaultHostExecutionSpace::memory_space> h_packed_seqs_v;
+  Kokkos::View<unsigned int, Kokkos::DefaultHostExecutionSpace::memory_space> h_num_valid_kmers_v;
 
   Kokkos::View<uint64_t[256]> twins_v;
   Kokkos::View<uint64_t[32]> mask_v;
 
  public:
   std::string packed_seqs;
-  Kokkos::View<SupermerInfo *>::HostMirror h_supermers_v;
+
+  /*DELETE ME?
+   * Kokkos::View<SupermerInfo *>::HostMirror h_supermers_v;
   Kokkos::View<unsigned int>::HostMirror h_num_supermers_v;
+  */
+
+  Kokkos::View<SupermerInfo *, Kokkos::DefaultHostExecutionSpace::memory_space> h_supermers_v;
+  Kokkos::View<unsigned int, Kokkos::DefaultHostExecutionSpace::memory_space> h_num_supermers_v;
 
   ParseAndPackGPUDriver(int upcxx_rank_me, int upcxx_rank_n, int qual_offset, int kmer_len, int num_kmer_longs, int minimizer_len,
                         double &init_time);

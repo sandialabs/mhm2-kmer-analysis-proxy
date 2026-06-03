@@ -81,10 +81,21 @@ struct SupermerBuff {
   // char *seqs;
   // count_t *counts;
   Kokkos::View<char *> seqs_v;
-  Kokkos::View<char *>::HostMirror h_seqs_v;
+  //
+  //DELETEME
+  //Kokkos::View<char *>::HostMirror h_seqs_v;
+  // Use explicit host-space Views instead of older nested View::HostMirror
+  // typedefs for portability across Kokkos releases.
+  //
+  Kokkos::View<char *, Kokkos::DefaultHostExecutionSpace::memory_space> h_seqs_v;
 
   Kokkos::View<count_t *> counts_v;
-  Kokkos::View<count_t *>::HostMirror h_counts_v;
+  //
+  //DELETEME
+  //
+  //
+  //Kokkos::View<count_t *>::HostMirror h_counts_v;
+  Kokkos::View<count_t *, Kokkos::DefaultHostExecutionSpace::memory_space> h_counts_v;
 };
 
 // Bytes used per element:
@@ -144,8 +155,16 @@ class HashTableGPUDriver {
   uint64_t buff_len = 0;
   // std::vector<KmerArray<MAX_K>> output_keys;
   // std::vector<CountExts> output_vals;
-  typename Kokkos::View<KmerArray<MAX_K> *>::HostMirror output_keys_v;
-  typename Kokkos::View<CountExts *>::HostMirror output_vals_v;
+  //
+  // DELETEME
+  //
+  //typename Kokkos::View<KmerArray<MAX_K> *>::HostMirror output_keys_v;
+  //typename Kokkos::View<CountExts *>::HostMirror output_vals_v;
+  
+  // Store output buffers as explicit host-space Views rather than relying on
+  // older nested View::HostMirror typedefs.
+  Kokkos::View<KmerArray<MAX_K> *, Kokkos::DefaultHostExecutionSpace::memory_space> output_keys_v;
+  Kokkos::View<CountExts *, Kokkos::DefaultHostExecutionSpace::memory_space> output_vals_v;
   size_t output_index = 0;
 
   KmerCountsMap<MAX_K> read_kmers_dev;
@@ -161,9 +180,17 @@ class HashTableGPUDriver {
   InsertStats read_kmers_stats;
   InsertStats ctg_kmers_stats;
   // InsertStats *gpu_insert_stats;
-  typename Kokkos::View<InsertStats>::HostMirror read_kmers_stats_v;
-  typename Kokkos::View<InsertStats>::HostMirror ctg_kmers_stats_v;
-  typename Kokkos::View<InsertStats> gpu_insert_stats_v;
+  //
+  //DELETEME
+  //
+  //
+  //typename Kokkos::View<InsertStats>::HostMirror read_kmers_stats_v;
+  //typename Kokkos::View<InsertStats>::HostMirror ctg_kmers_stats_v;
+  // Store stats in explicit host-space scalar Views for portability across
+  // Kokkos releases.
+  Kokkos::View<InsertStats, Kokkos::DefaultHostExecutionSpace::memory_space> read_kmers_stats_v;
+  Kokkos::View<InsertStats, Kokkos::DefaultHostExecutionSpace::memory_space> ctg_kmers_stats_v;
+  Kokkos::View<InsertStats> gpu_insert_stats_v;
   int num_gpu_calls = 0;
 
   const uint64_t KEY_EMPTY = 0xffffffffffffffff;
@@ -173,7 +200,7 @@ class HashTableGPUDriver {
   void insert_supermer_block();
   void purge_invalid(uint64_t &num_purged, uint64_t &num_entries);
 
-  typename Kokkos::View<uint64_t[256]> twins_v;
+  Kokkos::View<uint64_t[256]> twins_v;
 
  public:
   PASS_TYPE pass_type;

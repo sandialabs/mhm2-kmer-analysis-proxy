@@ -348,14 +348,18 @@ kcount_gpu::ParseAndPackGPUDriver::ParseAndPackGPUDriver(int upcxx_rank_me, int 
   // h_num_valid_kmers_v = Kokkos::create_mirror_view(dev_num_valid_kmers_v);
 
   twins_v = Kokkos::View<uint64_t[256]>("twins_array");
-  Kokkos::View<uint64_t[256]>::HostMirror h_twins_v = Kokkos::create_mirror_view(twins_v);
+  //Kokkos::View<uint64_t[256]>::HostMirror h_twins_v = Kokkos::create_mirror_view(twins_v);
+  // Use type deduction for the host mirror to avoid relying on older nested
+  // Kokkos View typedefs such as ::HostMirror, which are not portable across releases.
+  auto h_twins_v = Kokkos::create_mirror_view(twins_v);
   for (int i = 0; i < 256; i++) {
     h_twins_v(i) = KOKKOS_TWINS[i];
   }
   Kokkos::deep_copy(twins_v, h_twins_v);
 
   mask_v = Kokkos::View<uint64_t[32]>("mask_array");
-  Kokkos::View<uint64_t[32]>::HostMirror h_mask_v = Kokkos::create_mirror_view(mask_v);
+  //Kokkos::View<uint64_t[32]>::HostMirror h_mask_v = Kokkos::create_mirror_view(mask_v);
+  auto h_mask_v = Kokkos::create_mirror_view(mask_v);
   for (int i = 0; i < 32; i++) {
     h_mask_v(i) = KOKKOS_0_MASK[i];
   }
