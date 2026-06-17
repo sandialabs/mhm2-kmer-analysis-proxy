@@ -326,7 +326,6 @@ void gpu_unpack_supermer_block(SupermerBuff unpacked_supermer_buff, SupermerBuff
         if (packed_supermer_buff.counts_v.size() > 0) unpacked_supermer_buff.counts_v(i * 2 + 1) = packed_supermer_buff.counts_v(i);
       });
 
-  Kokkos::fence();
 }
 
 KOKKOS_INLINE_FUNCTION bool is_valid_base(char base) {
@@ -676,6 +675,8 @@ void KmerCountsMap<MAX_K>::init(int64_t ht_capacity) {
   Kokkos::deep_copy(keys_v, h_keys_v);
 
   vals_v = Kokkos::View<CountsArray *>("CountsMap vals", capacity);
+  // Match CUDA Memset(..., 0, ...): vals_v is not guaranteed zero-initialized on allocation.
+  Kokkos::deep_copy(vals_v, CountsArray{});
 
   Kokkos::Profiling::popRegion();
 }
@@ -705,6 +706,8 @@ void KmerExtsMap<MAX_K>::init(int64_t ht_capacity) {
   Kokkos::deep_copy(keys_v, h_keys_v);
 
   vals_v = Kokkos::View<CountExts *>("ExtsMap vals", capacity);
+  // Match CUDA behavior: Kokkos View allocation does not guarantee zero-initialized CountExts entries.
+  Kokkos::deep_copy(vals_v, CountExts{});
 }
 
 template <int MAX_K>

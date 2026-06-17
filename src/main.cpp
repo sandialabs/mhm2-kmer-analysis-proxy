@@ -436,7 +436,6 @@ int main(int argc, char* argv[]) {
   BaseTimer total_timer("Total Time", nullptr);  // no PromiseReduce possible
   auto init_timings = init_upcxx(total_timer);
   auto am_root = !rank_me();
-  Options options;
 
 #ifdef ENABLE_KOKKOS
   // Decide once (e.g. from a cmd-line flag, env var, or hard-coded)
