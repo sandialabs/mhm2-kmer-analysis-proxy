@@ -380,7 +380,12 @@ bool kcount_gpu::ParseAndPackGPUDriver::process_seq_block(const string &seqs, un
   for (int i = 0; i < seqs.length(); i++) {
     h_seqs_v(i) = seqs[i];
   }
-  Kokkos::deep_copy(dev_seqs_v, h_seqs_v);
+
+  // Copy only the populated prefix [0, seqs.length()); the full Views are
+  // block-sized, but only the first seqs.length() entries are valid here.
+  Kokkos::deep_copy(
+      Kokkos::subview(dev_seqs_v, std::pair<size_t, size_t>(0, seqs.length())),
+      Kokkos::subview(h_seqs_v, std::pair<size_t, size_t>(0, seqs.length())));
 
   parse_and_pack(dev_seqs_v, minimizer_len, kmer_len, num_kmer_longs, seqs.length(), dev_kmer_targets_v, upcxx_rank_n, twins_v,
                  mask_v);
@@ -398,7 +403,11 @@ bool kcount_gpu::ParseAndPackGPUDriver::process_seq_block(const string &seqs, un
 
   Kokkos::deep_copy(h_num_supermers_v, dev_num_supermers_v);
 
-  Kokkos::deep_copy(h_supermers_v, dev_supermers_v);
+  // Copy only the populated prefix [0, h_num_supermers_v()); the full View is
+  // capacity-sized, but only the first num_supermers entries are valid.
+  Kokkos::deep_copy(
+      Kokkos::subview(h_supermers_v, std::pair<size_t, size_t>(0, h_num_supermers_v())),
+      Kokkos::subview(dev_supermers_v, std::pair<size_t, size_t>(0, h_num_supermers_v())));
 
   Kokkos::fence();
 
@@ -411,7 +420,14 @@ void kcount_gpu::ParseAndPackGPUDriver::pack_seq_block(const string &seqs) {
   pack_seqs(dev_seqs_v, dev_packed_seqs_v, seqs.length());
 
   packed_seqs.resize(packed_seqs_len);
-  Kokkos::deep_copy(h_packed_seqs_v, dev_packed_seqs_v);
+
+  //Kokkos::deep_copy(h_packed_seqs_v, dev_packed_seqs_v);
+  // Copy only the populated prefix [0, packed_seqs_len); the full View is
+  // block-sized, but only the packed prefix is valid for this sequence block.
+  Kokkos::deep_copy(
+      Kokkos::subview(h_packed_seqs_v, std::pair<size_t, size_t>(0, packed_seqs_len)),
+      Kokkos::subview(dev_packed_seqs_v, std::pair<size_t, size_t>(0, packed_seqs_len)));
+
   for (int i = 0; i < packed_seqs_len; i++) {
     packed_seqs[i] = h_packed_seqs_v(i);
   }

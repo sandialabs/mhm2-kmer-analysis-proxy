@@ -584,6 +584,9 @@ void gpu_insert_supermer_block(KmerCountsMap<MAX_K> elems, SupermerBuff supermer
   Kokkos::View<KmerArray<MAX_K> *> keys_view = elems.keys_v;
   Kokkos::View<CountsArray *> vals_view = elems.vals_v;
   uint64_t capacity = elems.capacity;
+  // These are invariant for the entire kernel launch; keep them out of the hot loop.
+  const bool use_qf = false;
+  const bool update_only = (use_qf && !ctg_kmers);
 
   Kokkos::parallel_reduce(
       "gpu_insert_supermer_block", buff_len,
@@ -602,12 +605,11 @@ void gpu_insert_supermer_block(KmerCountsMap<MAX_K> elems, SupermerBuff supermer
             if (kmer.longs[N_LONGS - 1] == KEY_TRANSITION) Kokkos::printf("block equal to KEY_TRANSITION");
             auto hash_val = kmer_hash(kmer);
             char prev_left_ext = '0', prev_right_ext = '0';
-            // bool use_qf = (tcf != nullptr);
-            bool use_qf = false;
-            bool update_only = (use_qf && !ctg_kmers);
             bool updated =
                 gpu_insert_kmer(keys_view, vals_view, capacity, hash_val, kmer, left_ext, right_ext, prev_left_ext, prev_right_ext,
                                 kmer_count, num_new_inserts, dropped_inserts, ctg_kmers, use_qf, update_only);
+
+
             //   //   // if (update_only && !updated) {
             //   //   //   auto packed = two_choice_filter::pack_extensions(left_ext, right_ext);
             //   //   //   TCF_RESULT result = 0;
@@ -871,12 +873,24 @@ template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::insert_supermer_block() {
   bool is_ctg_kmers = (pass_type == CTG_KMERS_PASS);
 
-  Kokkos::deep_copy(packed_elem_buff_dev.seqs_v, elem_buff_host.h_seqs_v);
+  // Copies full buffer:  Kokkos::deep_copy(packed_elem_buff_dev.seqs_v, elem_buff_host.h_seqs_v);
 
-  // Clear the unpack buffer before use; make the fill value explicit for the
+  // Copy only the populated prefix [0, buff_len); otherwise deep_copy transfers
+  // the full allocated buffer every call.
+  Kokkos::deep_copy(
+      Kokkos::subview(packed_elem_buff_dev.seqs_v, std::pair<size_t, size_t>(0, buff_len)),
+      Kokkos::subview(elem_buff_host.h_seqs_v, std::pair<size_t, size_t>(0, buff_len)));
+
+  // DELETEME:  Clear the unpack buffer before use; make the fill value explicit for the
   // char View element type.
-  Kokkos::deep_copy(unpacked_elem_buff_dev.seqs_v, char(0));
-  //
+  //Kokkos::deep_copy(unpacked_elem_buff_dev.seqs_v, char(0));
+  
+  // Clear only the used unpacked prefix [0, 2 * buff_len); zeroing the full
+  // allocated buffer every block adds unnecessary memset overhead.
+  Kokkos::deep_copy(
+      Kokkos::subview(unpacked_elem_buff_dev.seqs_v, std::pair<size_t, size_t>(0, size_t(buff_len) * 2)),
+      char(0));
+
   // if (is_ctg_kmers)
   //   ERROR_CHECK(Memcpy(packed_elem_buff_dev.counts, elem_buff_host.counts, buff_len * sizeof(count_t), MemcpyHostToDevice));
 
