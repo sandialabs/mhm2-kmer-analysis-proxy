@@ -188,9 +188,6 @@ __global__ void build_supermers(char *seqs, int *kmer_targets, unsigned int num_
       }
     }
   }
-  /*DELETEME
-  reduce(my_valid_kmers, num_kmers, num_valid_kmers);
-  */
   reduce(my_valid_kmers, num_valid_kmers);
 }
 

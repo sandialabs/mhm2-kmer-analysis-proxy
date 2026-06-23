@@ -197,11 +197,6 @@ __global__ void gpu_merge_ctg_kmers(KmerCountsMap<MAX_K> read_kmers, const KmerC
       }
     }
   }
-  /*DELETEME
-  reduce(attempted_inserts, ctg_kmers.capacity, &(insert_counts[0]));
-  reduce(dropped_inserts, ctg_kmers.capacity, &(insert_counts[1]));
-  reduce(new_inserts, ctg_kmers.capacity, &(insert_counts[2]));
-  */
   reduce(attempted_inserts, &(insert_counts[0]));
   reduce(dropped_inserts, &(insert_counts[1]));
   reduce(new_inserts, &(insert_counts[2]));
@@ -245,10 +240,6 @@ __global__ void gpu_compact_ht(KmerCountsMap<MAX_K> elems, KmerExtsMap<MAX_K> co
       }
     }
   }
-  /* DELETEME
-  reduce(dropped_inserts, compact_elems.capacity, &(elem_counts[0]));
-  reduce(unique_inserts, compact_elems.capacity, &(elem_counts[1]));
-  */
   reduce(dropped_inserts, &(elem_counts[0]));
   reduce(unique_inserts, &(elem_counts[1]));
 }
@@ -272,10 +263,6 @@ __global__ void gpu_purge_invalid(KmerCountsMap<MAX_K> elems, uint64_t *elem_cou
       }
     }
   }
-  /*DELETEME
-  reduce(num_purged, elems.capacity, &(elem_counts[0]));
-  reduce(num_elems, elems.capacity, &(elem_counts[1]));
-  */
   reduce(num_purged, &(elem_counts[0]));
   reduce(num_elems, &(elem_counts[1]));
 }
@@ -482,13 +469,6 @@ __global__ void gpu_insert_supermer_block(KmerCountsMap<MAX_K> elems, SupermerBu
       }
     }
   }
-  /*DELETEME?
-  reduce(attempted_inserts, buff_len, &insert_stats->attempted);
-  reduce(dropped_inserts, buff_len, &insert_stats->dropped);
-  reduce(dropped_inserts_qf, buff_len, &insert_stats->dropped_qf);
-  reduce(new_inserts, buff_len, &insert_stats->new_inserts);
-  reduce(num_unique_qf, buff_len, &insert_stats->num_unique_qf);
-  */
   reduce(attempted_inserts, &insert_stats->attempted);
   reduce(dropped_inserts, &insert_stats->dropped);
   reduce(dropped_inserts_qf, &insert_stats->dropped_qf);
