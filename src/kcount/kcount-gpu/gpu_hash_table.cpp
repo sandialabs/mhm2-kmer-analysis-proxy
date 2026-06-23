@@ -374,7 +374,9 @@ __device__ bool gpu_insert_kmer(KmerCountsMap<MAX_K> elems, uint64_t hash_val, K
   const int N_LONGS = KmerArray<MAX_K>::N_LONGS;
   uint64_t slot = hash_val % elems.capacity;
   auto start_slot = slot;
-  const int MAX_PROBE = (elems.capacity < 200 ? elems.capacity : 200);
+  // const int MAX_PROBE = (elems.capacity < 200 ? elems.capacity : 200);
+  const int MAX_PROBE = (elems.capacity < KCOUNT_HT_MAX_PROBE ? elems.capacity : KCOUNT_HT_MAX_PROBE);
+
   bool found_slot = false;
   bool kmer_found_in_ht = false;
   uint64_t old_key = KEY_TRANSITION;
@@ -767,6 +769,7 @@ void HashTableGPUDriver<MAX_K>::done_all_inserts(uint64_t &num_dropped, uint64_t
   ERROR_CHECK(Free(gpu_insert_stats));
   // overallocate to reduce collisions
   num_entries *= 1.3;
+  num_entries += 4000;
   // now compact the hash table entries
   uint64_t *counts_gpu;
   int NUM_COUNTS = 2;
