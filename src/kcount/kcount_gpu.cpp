@@ -310,7 +310,7 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
     upcxx::future<> fut_report =
         when_all(fut_avg_num_gpu_calls, fut_max_num_gpu_calls, fut_num_dropped_elems, fut_num_attempted_inserts, fut_num_inserts,
                  fut_all_capacity)
-            .then([=](auto avg_num_gpu_calls, auto max_num_gpu_calls, auto num_dropped_elems, auto num_attempted_inserts,
+            .then([this](auto avg_num_gpu_calls, auto max_num_gpu_calls, auto num_dropped_elems, auto num_attempted_inserts,
                       auto num_inserts, auto all_capacity) {
               if (state->ht_gpu_driver.pass_type == kcount_gpu::READ_KMERS_PASS)
                 SLOG_GPU("GPU hash table stats for read kmers pass:\n");
@@ -334,7 +334,7 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
       auto fut_qf_tot_load = pr.reduce_one(state->ht_gpu_driver.get_qf_load_factor(), op_fast_add, 0);
       fut_report = when_all(fut_report, fut_num_unique_qf, fut_num_dropped_qf, fut_qf_max_load, fut_qf_tot_load, fut_num_inserts,
                             fut_num_attempted_inserts)
-                       .then([=](auto num_unique_qf, auto num_dropped_qf, auto qf_max_load, auto qf_tot_load, auto num_inserts,
+                       .then([](auto num_unique_qf, auto num_dropped_qf, auto qf_max_load, auto qf_tot_load, auto num_inserts,
                                  auto num_attempted_inserts) {
                          if (num_unique_qf) {
                            // SLOG_GPU("  QF found ", perc_str(num_unique_qf, num_inserts), " unique kmers ", num_inserts, "\n");
@@ -355,7 +355,7 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
         pr.reduce_one(load, op_fast_add, 0).then([](auto sum_load_factor) { return sum_load_factor / rank_n(); });
     auto fut_max_load_factor = pr.reduce_one(load, op_fast_max, 0);
     fut_report =
-        when_all(fut_report, fut_avg_load_factor, fut_max_load_factor).then([=](auto avg_load_factor, auto max_load_factor) {
+        when_all(fut_report, fut_avg_load_factor, fut_max_load_factor).then([insert_stats](auto avg_load_factor, auto max_load_factor) {
           SLOG_GPU("  load factor ", fixed, setprecision(2), avg_load_factor, " avg, ", max_load_factor, " max\n");
           SLOG_GPU("  final size per rank is ", insert_stats.new_inserts, " entries\n");
         });

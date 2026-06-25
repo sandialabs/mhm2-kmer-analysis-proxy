@@ -41,7 +41,7 @@
 # The name of our project is "MHM2". CMakeLists files in this project can refer
 # to the root source directory of the project as ${MHM2_SOURCE_DIR} and to the
 # root binary directory of the project as ${MHM2_BINARY_DIR}
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 project(MHM2 VERSION 0.9.0 LANGUAGES C CXX)
 
 message(STATUS "Building ${CMAKE_PROJECT_NAME} with CMake ${CMAKE_VERSION}")
@@ -113,6 +113,7 @@ if(CMAKE_HIP_COMPILER)
   if(ENABLE_HIP)
     find_package(hip REQUIRED)
     add_definitions(-DHIP_GPU)
+    add_compile_options(-Wno-macro-redefined)
     # set(CMAKE_HIP_FLAGS "-fgpu-rdc --hip-link")
   endif()
 else()

@@ -61,7 +61,6 @@ else
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
           -DCMAKE_BUILD_TYPE=$1 \
           -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
-          -DMHM2_ENABLE_TESTING=$testing \
           -DCMAKE_CXX_STANDARD=17 \
           -DCMAKE_CXX_FLAGS="-Wall -Wno-deprecated-declarations" \
           ${CC:+-DCMAKE_C_COMPILER=$CC} \

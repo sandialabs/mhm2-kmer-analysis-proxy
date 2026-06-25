@@ -339,16 +339,13 @@ kcount_gpu::ParseAndPackGPUDriver::ParseAndPackGPUDriver(int upcxx_rank_me, int 
   dev_supermers_v = Kokkos::View<SupermerInfo *>("dev_supermers", max_kmers);
   dev_packed_seqs_v = Kokkos::View<char *>("dev_packed_seqs", (KCOUNT_SEQ_BLOCK_SIZE + 1) / 2);
   dev_num_supermers_v = Kokkos::View<unsigned int>("dev_num_supermers");
-  // dev_num_valid_kmers_v = Kokkos::View<unsigned int>("dev_num_valid_kmers");
 
   h_seqs_v = Kokkos::create_mirror_view(dev_seqs_v);
   h_supermers_v = Kokkos::create_mirror_view(dev_supermers_v);
   h_packed_seqs_v = Kokkos::create_mirror_view(dev_packed_seqs_v);
   h_num_supermers_v = Kokkos::create_mirror_view(dev_num_supermers_v);
-  // h_num_valid_kmers_v = Kokkos::create_mirror_view(dev_num_valid_kmers_v);
 
   twins_v = Kokkos::View<uint64_t[256]>("twins_array");
-  //Kokkos::View<uint64_t[256]>::HostMirror h_twins_v = Kokkos::create_mirror_view(twins_v);
   auto h_twins_v = Kokkos::create_mirror_view(twins_v);
   for (int i = 0; i < 256; i++) {
     h_twins_v(i) = KOKKOS_TWINS[i];
@@ -356,19 +353,14 @@ kcount_gpu::ParseAndPackGPUDriver::ParseAndPackGPUDriver(int upcxx_rank_me, int 
   Kokkos::deep_copy(twins_v, h_twins_v);
 
   mask_v = Kokkos::View<uint64_t[32]>("mask_array");
-  //Kokkos::View<uint64_t[32]>::HostMirror h_mask_v = Kokkos::create_mirror_view(mask_v);
   auto h_mask_v = Kokkos::create_mirror_view(mask_v);
   for (int i = 0; i < 32; i++) {
     h_mask_v(i) = KOKKOS_0_MASK[i];
   }
   Kokkos::deep_copy(mask_v, h_mask_v);
-
-  // total storage required is approx KCOUNT_SEQ_BLOCK_SIZE * (1 + num_kmers_longs * sizeof(uint64_t) + sizeof(int) + 1)
 }
 
-kcount_gpu::ParseAndPackGPUDriver::~ParseAndPackGPUDriver() {
-  //
-}
+kcount_gpu::ParseAndPackGPUDriver::~ParseAndPackGPUDriver() {}
 
 bool kcount_gpu::ParseAndPackGPUDriver::process_seq_block(const string &seqs, unsigned int &num_valid_kmers) {
   if (seqs.length() >= KCOUNT_SEQ_BLOCK_SIZE) return false;
@@ -381,8 +373,6 @@ bool kcount_gpu::ParseAndPackGPUDriver::process_seq_block(const string &seqs, un
     h_seqs_v(i) = seqs[i];
   }
 
-  // Copy only the populated prefix [0, seqs.length()); the full Views are
-  // block-sized, but only the first seqs.length() entries are valid here.
   Kokkos::deep_copy(
       Kokkos::subview(dev_seqs_v, std::pair<size_t, size_t>(0, seqs.length())),
       Kokkos::subview(h_seqs_v, std::pair<size_t, size_t>(0, seqs.length())));
@@ -391,20 +381,13 @@ bool kcount_gpu::ParseAndPackGPUDriver::process_seq_block(const string &seqs, un
                  mask_v);
 
   h_num_supermers_v() = 0;
-  // h_num_valid_kmers_v() = 0;
   Kokkos::deep_copy(dev_num_supermers_v, h_num_supermers_v);
-  // Kokkos::deep_copy(dev_num_valid_kmers_v, h_num_valid_kmers_v);
 
   build_supermers(dev_seqs_v, dev_kmer_targets_v, num_kmers, kmer_len, seqs.length(), dev_supermers_v, dev_num_supermers_v,
                   num_valid_kmers, upcxx_rank_me);
 
-  // Kokkos::deep_copy(h_num_valid_kmers_v, dev_num_valid_kmers_v);
-  // num_valid_kmers = h_num_valid_kmers_v();
-
   Kokkos::deep_copy(h_num_supermers_v, dev_num_supermers_v);
 
-  // Copy only the populated prefix [0, h_num_supermers_v()); the full View is
-  // capacity-sized, but only the first num_supermers entries are valid.
   Kokkos::deep_copy(
       Kokkos::subview(h_supermers_v, std::pair<size_t, size_t>(0, h_num_supermers_v())),
       Kokkos::subview(dev_supermers_v, std::pair<size_t, size_t>(0, h_num_supermers_v())));
@@ -421,9 +404,6 @@ void kcount_gpu::ParseAndPackGPUDriver::pack_seq_block(const string &seqs) {
 
   packed_seqs.resize(packed_seqs_len);
 
-  //Kokkos::deep_copy(h_packed_seqs_v, dev_packed_seqs_v);
-  // Copy only the populated prefix [0, packed_seqs_len); the full View is
-  // block-sized, but only the packed prefix is valid for this sequence block.
   Kokkos::deep_copy(
       Kokkos::subview(h_packed_seqs_v, std::pair<size_t, size_t>(0, packed_seqs_len)),
       Kokkos::subview(dev_packed_seqs_v, std::pair<size_t, size_t>(0, packed_seqs_len)));

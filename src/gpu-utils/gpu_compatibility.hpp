@@ -104,14 +104,14 @@
 #define FuncAttributeMaxDynamicSharedMemorySize hipFuncAttributeMaxDynamicSharedMemorySize
 
 inline int getDeviceClockRate(int deviceId) {
-  int clockRate;
-  hipDeviceGetAttribute(&clockRate, hipDeviceAttributeClockRate, deviceId);
+  int clockRate = 0;
+  if (hipDeviceGetAttribute(&clockRate, hipDeviceAttributeClockRate, deviceId) != hipSuccess) return 0;
   return clockRate;
 }
 
 inline int getDeviceMemoryClockRate(int deviceId) {
-  int memClockRate;
-  hipDeviceGetAttribute(&memClockRate, hipDeviceAttributeMemoryClockRate, deviceId);
+  int memClockRate = 0;
+  if (hipDeviceGetAttribute(&memClockRate, hipDeviceAttributeMemoryClockRate, deviceId) != hipSuccess) return 0;
   return memClockRate;
 }
 
@@ -175,14 +175,14 @@ inline int getDeviceMemoryClockRate(int deviceId) {
 #define FuncAttributeMaxDynamicSharedMemorySize cudaFuncAttributeMaxDynamicSharedMemorySize
 
 inline int getDeviceClockRate(int deviceId) {
-  int clockRate;
-  cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, deviceId);
+  int clockRate = 0;
+  if (cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, deviceId) != cudaSuccess) return 0;
   return clockRate;
 }
 
 inline int getDeviceMemoryClockRate(int deviceId) {
-  int memClockRate;
-  cudaDeviceGetAttribute(&memClockRate, cudaDevAttrMemoryClockRate, deviceId);
+  int memClockRate = 0;
+  if (cudaDeviceGetAttribute(&memClockRate, cudaDevAttrMemoryClockRate, deviceId) != cudaSuccess) return 0;
   return memClockRate;
 }
 #endif

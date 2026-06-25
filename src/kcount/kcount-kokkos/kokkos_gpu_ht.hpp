@@ -135,7 +135,6 @@ template <int MAX_K>
 class HashTableGPUDriver {
   static const int N_LONGS = (MAX_K + 31) / 32;
   struct HashTableDriverState;
-  // stores CUDA specific variables
   HashTableDriverState *dstate = nullptr;
 
   int upcxx_rank_me;
@@ -160,15 +159,6 @@ class HashTableGPUDriver {
 
   InsertStats read_kmers_stats;
   InsertStats ctg_kmers_stats;
-  // InsertStats *gpu_insert_stats;
-  //
-  //DELETEME
-  //
-  //
-  //typename Kokkos::View<InsertStats>::HostMirror read_kmers_stats_v;
-  //typename Kokkos::View<InsertStats>::HostMirror ctg_kmers_stats_v;
-  // Store stats in explicit host-space scalar Views for portability across
-  // Kokkos releases.
   Kokkos::View<InsertStats, Kokkos::DefaultHostExecutionSpace::memory_space> read_kmers_stats_v;
   Kokkos::View<InsertStats, Kokkos::DefaultHostExecutionSpace::memory_space> ctg_kmers_stats_v;
   Kokkos::View<InsertStats> gpu_insert_stats_v;
