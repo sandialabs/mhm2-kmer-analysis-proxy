@@ -700,7 +700,7 @@ template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::purge_invalid(uint64_t &num_purged, uint64_t &num_entries) {
   num_purged = num_entries = 0;
   uint64_t *counts_gpu;
-  int NUM_COUNTS = 2;
+  constexpr int NUM_COUNTS = 2;
   ERROR_CHECK(Malloc(&counts_gpu, NUM_COUNTS * sizeof(uint64_t)));
   ERROR_CHECK(Memset(counts_gpu, 0, NUM_COUNTS * sizeof(uint64_t)));
   GPUTimer t;
@@ -752,7 +752,7 @@ void HashTableGPUDriver<MAX_K>::done_all_inserts(uint64_t &num_dropped, uint64_t
   num_entries += 4000;
   // now compact the hash table entries
   uint64_t *counts_gpu;
-  int NUM_COUNTS = 2;
+  constexpr int NUM_COUNTS = 2;
   ERROR_CHECK(Malloc(&counts_gpu, NUM_COUNTS * sizeof(uint64_t)));
   ERROR_CHECK(Memset(counts_gpu, 0, NUM_COUNTS * sizeof(uint64_t)));
   KmerExtsMap<MAX_K> compact_read_kmers_dev;
@@ -790,7 +790,7 @@ template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::done_ctg_kmer_inserts(uint64_t &attempted_inserts, uint64_t &dropped_inserts,
                                                       uint64_t &new_inserts) {
   uint64_t *counts_gpu;
-  int NUM_COUNTS = 3;
+  constexpr int NUM_COUNTS = 3;
   ERROR_CHECK(Malloc(&counts_gpu, NUM_COUNTS * sizeof(uint64_t)));
   ERROR_CHECK(Memset(counts_gpu, 0, NUM_COUNTS * sizeof(uint64_t)));
   GPUTimer t;
