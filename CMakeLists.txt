@@ -42,7 +42,7 @@
 # to the root source directory of the project as ${MHM2_SOURCE_DIR} and to the
 # root binary directory of the project as ${MHM2_BINARY_DIR}
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(MHM2)
+project(MHM2 VERSION 0.9.0 LANGUAGES C CXX)
 
 message(STATUS "Building ${CMAKE_PROJECT_NAME} with CMake ${CMAKE_VERSION}")
 # ----------------------------------------------------------------------------------------#
