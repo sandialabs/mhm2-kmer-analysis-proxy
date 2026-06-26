@@ -349,6 +349,42 @@ def which(file_name):
     return None
 
 
+def _repo_root():
+    return os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), ".."))
+
+
+def _install_bin_dir():
+    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    install_root = os.environ.get("MHM2_INSTALL_PATH", os.path.join(_repo_root(), "install"))
+    return os.path.join(install_root, "bin")
+
+
+def resolve_mhm2_binary(binary_name):
+    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    for path in (os.path.join(script_dir, binary_name), os.path.join(_install_bin_dir(), binary_name)):
+        if os.path.exists(path) or which(path):
+            return path
+    return os.path.join(script_dir, binary_name)
+
+
+def resolve_helper_script(script_name):
+    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    repo_root = _repo_root()
+    scripts_dir = os.path.join(repo_root, "scripts")
+    names = [script_name]
+    if script_name == "mhm2-mps-wrapper-perlmutter.sh":
+        names.append("mps-wrapper-perlmutter.sh")
+    for name in names:
+        for path in (
+            os.path.join(script_dir, name),
+            os.path.join(_install_bin_dir(), name),
+            os.path.join(scripts_dir, name),
+        ):
+            if os.path.isfile(path):
+                return path
+    return os.path.join(script_dir, script_name)
+
+
 def handle_interrupt(signum, frame):
     global _orig_sighdlr
     global _stop_thread
@@ -573,8 +609,8 @@ def main():
 
     options, unknown_options = argparser.parse_known_args()
 
-    # expect mhm2 to be in same directory as mhm2.py
-    mhm2_binary_path = os.path.split(sys.argv[0])[0] + "/" + options.binary
+    # look for mhm2 next to this script (install layout) or under install/bin (source tree)
+    mhm2_binary_path = resolve_mhm2_binary(options.binary)
     if not (os.path.exists(mhm2_binary_path) or which(mhm2_binary_path)):
         show_mhm2_help(mhm2_binary_path)
         die("Cannot find binary ", options.binary + " in '", mhm2_binary_path, "'")
@@ -675,7 +711,7 @@ def main():
             str(num_nodes),
             "--gpus-per-node=4",
             "--",
-            os.path.split(sys.argv[0])[0] + "/mhm2-mps-wrapper-perlmutter.sh",
+            resolve_helper_script("mhm2-mps-wrapper-perlmutter.sh"),
         ]
         if "UPCXX_SHARED_HEAP_SIZE" not in os.environ:
             os.environ["UPCXX_SHARED_HEAP_SIZE"] = "450 MB" if "%" in options.shared_heap else options.shared_heap

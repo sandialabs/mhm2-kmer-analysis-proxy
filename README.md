@@ -107,10 +107,10 @@ Set `KOKKOS_USE` to `KOKKOS_ON` (default) or `KOKKOS_OFF`. The script runs `scri
 
 ### Python wrapper
 
-`run_app.py` provides a convenient launcher. A minimal run requires the number of UPC++ processes and at least one FASTQ input:
+`scripts/mhm2.py` launches the installed `mhm2` binary via UPC++. A minimal run requires the number of UPC++ processes and at least one FASTQ input:
 
 ```bash
-./run_app.py -n 1 -p seqs_1.fastq seqs_2.fastq
+./scripts/mhm2.py -n 1 -p seqs_1.fastq seqs_2.fastq
 ```
 
 #### Run options
@@ -129,7 +129,7 @@ Set `KOKKOS_USE` to `KOKKOS_ON` (default) or `KOKKOS_OFF`. The script runs `scri
 Example with two paired libraries:
 
 ```bash
-./run_app.py -n 4 -p lib1_1.fastq lib1_2.fastq lib2_1.fastq lib2_2.fastq
+./scripts/mhm2.py -n 4 -p lib1_1.fastq lib1_2.fastq lib2_1.fastq lib2_2.fastq
 ```
 
 ### El Dorado run script

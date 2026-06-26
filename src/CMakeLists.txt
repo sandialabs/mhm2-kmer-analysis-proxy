@@ -316,13 +316,14 @@ else()
     target_link_options(mhm2 PUBLIC "-Wl,--build-id")
   endif()
 endif()
-configure_file(mhm2.py ${CMAKE_CURRENT_BINARY_DIR}/mhm2.py)
+configure_file(${MHM2_SOURCE_DIR}/scripts/mhm2.py ${CMAKE_CURRENT_BINARY_DIR}/mhm2.py)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/mhm2.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-install(PROGRAMS mhm2_parse_run_log.pl DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+install(PROGRAMS ${MHM2_SOURCE_DIR}/scripts/mhm2_parse_run_log.pl
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 # special spawning script for Perlmutter
 install(
-  PROGRAMS mps-wrapper-perlmutter.sh
+  PROGRAMS ${MHM2_SOURCE_DIR}/scripts/mps-wrapper-perlmutter.sh
   DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
   RENAME mhm2-mps-wrapper-perlmutter.sh)

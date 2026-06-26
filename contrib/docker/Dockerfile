@@ -42,7 +42,7 @@ COPY . mhm2
 
 RUN echo "Build MHM2" && \
     cd mhm2 && \
-    ( [ -z "${MHM2_VER}" -o -f src/mhm2.py ] || ( \
+    ( [ -z "${MHM2_VER}" -o -f scripts/mhm2.py ] || ( \
       git clone https://bitbucket.org/berkeleylab/mhm2.git . && \
       git checkout ${MHM2_VER} && \
       git submodule init && \
