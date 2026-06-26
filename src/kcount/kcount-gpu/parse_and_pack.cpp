@@ -308,8 +308,8 @@ bool kcount_gpu::ParseAndPackGPUDriver::process_seq_block(const string &seqs, un
   ERROR_CHECK(Memcpy(&num_supermers, dev_num_supermers, sizeof(unsigned int), MemcpyDeviceToHost));
   supermers.resize(num_supermers);
   ERROR_CHECK(Memcpy(&(supermers[0]), dev_supermers, num_supermers * sizeof(SupermerInfo), MemcpyDeviceToHost));
-
-  ERROR_CHECK(EventSynchronize(dstate->event));
+  // The preceding device-to-host copies already synchronize the required GPU work.
+  //ERROR_CHECK(EventSynchronize(dstate->event));
   ERROR_CHECK(EventDestroy(dstate->event));
   kernel_timer.stop();
   t_kernel += kernel_timer.get_elapsed();
