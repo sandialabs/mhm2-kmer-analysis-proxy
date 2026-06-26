@@ -74,34 +74,21 @@ git clone https://github.com/LoganWilliams1/mhm2_kmer_analysis_v2.git
 cd mhm2_kmer_analysis_v2
 ```
 
-### Generic build
-
-The core build logic lives in `scripts/build.sh`, inherited from parent MHM2 with minor changes to accept additional CMake options. By default it installs the `mhm2` binary under `install/bin`.
+Build and install with `scripts/build.sh` from the repository root. The script checks for UPC++, configures CMake, and installs the `mhm2` binary under `mhm2_kokkos_install_gpu_<BACKEND>_<KOKKOS_USE>/` in the repository (for example, `mhm2_kokkos_install_gpu_HIP_KOKKOS_ON/`).
 
 ```bash
-./scripts/build.sh Release
+./scripts/build.sh
+KOKKOS_USE=KOKKOS_OFF ./scripts/build.sh
 ```
 
-Kokkos-enabled build:
+Set `KOKKOS_USE` to `KOKKOS_ON` (default) or `KOKKOS_OFF` to select the Kokkos install, C++ standard, and install prefix. On InfiniBand systems, the script uses `mpicxx`/`mpicc`; ensure UPC++ and Kokkos were built with the same toolchain. See the [UPC++ Linux configuration notes](https://bitbucket.org/berkeleylab/upcxx/wiki/INSTALL#markdown-header-configuration-linux).
+
+Optional first argument (default `Release`): `Debug`, `RelWithDebInfo`, `clean`, or `cleanall`.
 
 ```bash
-./scripts/build.sh Release \
-  -DENABLE_KOKKOS=ON \
-  -DCMAKE_CXX_COMPILER="$(which mpicxx)"
+./scripts/build.sh clean
+./scripts/build.sh cleanall
 ```
-
-On InfiniBand systems, specify the MPI C++ wrapper explicitly if the default compiler is not MPI-aware. See the [UPC++ Linux configuration notes](https://bitbucket.org/berkeleylab/upcxx/wiki/INSTALL#markdown-header-configuration-linux).
-
-### Proxy build script (El Dorado / MI300A)
-
-For site-specific Kokkos and install paths on El Dorado, use the consolidated build script:
-
-```bash
-./scripts/build_proxy.sh
-KOKKOS_USE=KOKKOS_OFF ./scripts/build_proxy.sh
-```
-
-Set `KOKKOS_USE` to `KOKKOS_ON` (default) or `KOKKOS_OFF`. The script runs `scripts/build.sh` from the repository root with the appropriate Kokkos install, C++ standard, and install prefix.
 
 ## Run
 
@@ -132,13 +119,13 @@ Example with two paired libraries:
 ./scripts/mhm2.py -n 4 -p lib1_1.fastq lib1_2.fastq lib2_1.fastq lib2_2.fastq
 ```
 
-### El Dorado run script
+### Run script
 
 For benchmark runs on El Dorado with preconfigured inputs and install paths:
 
 ```bash
-./scripts/run_proxy.sh
-RUN_BENCHMARK_LOOP=1 ./scripts/run_proxy.sh
+./scripts/run.sh
+RUN_BENCHMARK_LOOP=1 ./scripts/run.sh
 ```
 
 Environment variables:

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${ROOT}"
+
 echo "####################################################################"
 echo "                     PROXY RUNNER                                   "
 echo "####################################################################"
@@ -14,9 +17,9 @@ export GASNET_BACKTRACE=1
 
 export DATE=$(date +"%Y-%m-%d")
 
-export ROOT=/projects/proxy_apps
+export PROJECT_ROOT="${PROJECT_ROOT:=/projects/proxy_apps}"
 
-export DATA_ROOT_COW=${ROOT}/assembler_input_datasets/gavin_lab_data/CowMetaGenome
+export DATA_ROOT_COW=${PROJECT_ROOT}/assembler_input_datasets/gavin_lab_data/CowMetaGenome
 
 # 36_S23_R1_001_trim2mil.fastq
 # 36_S23_R2_001_trim2mil.fastq
@@ -36,29 +39,29 @@ export INPUT_SIZE="small"
 #export INPUT_SIZE="medium"
 #export INPUT_SIZE="large"
 
-export WORKING_DIR=${ROOT}/jciesko_workspace
-cd "${WORKING_DIR}"
-
-export APP="mhm2-proxy"
-export MACHINE="eldorado"
 export KOKKOS_USE="${KOKKOS_USE:=KOKKOS_ON}"
-export ARCH="MI300A"
-export BACKEND="HIP"
+export BACKEND="${BACKEND:=HIP}"
 export NUM_RANKS=${NUM_RANKS:=2}
 
 _run_proxy() {
-  local mhm2_bin=$1
-  local kokkos_use=$2
+  local kokkos_use=$1
 
   export KOKKOS_USE=${kokkos_use}
-  export PROXY_OUTPUT=${WORKING_DIR}/${KOKKOS_USE}_${BACKEND}_ranks_${NUM_RANKS}
+  local mhm2_bin="${ROOT}/mhm2_kokkos_install_gpu_${BACKEND}_${KOKKOS_USE}/bin/mhm2"
+  export PROXY_OUTPUT="${ROOT}/${KOKKOS_USE}_${BACKEND}_ranks_${NUM_RANKS}"
   mkdir -p "${PROXY_OUTPUT}"
+
+  if [ ! -x "${mhm2_bin}" ]; then
+    echo "Missing executable: ${mhm2_bin}" >&2
+    echo "Build it first: ./scripts/build.sh" >&2
+    exit 1
+  fi
 
   upcxx-run \
   -n ${NUM_RANKS} \
   -shared-heap "250MB" \
   -network=ofi \
-  ${mhm2_bin} \
+  "${mhm2_bin}" \
   --pin=none \
   --paired-reads \
   ${DATA_SMALL}/36_S23_R1_001_trim2mil.fastq \
@@ -67,11 +70,11 @@ _run_proxy() {
 }
 
 run_proxy_kokkos_off() {
-  _run_proxy ./mhm2_kokkos_install_gpu_HIP_KOKKOS_OFF_eldorado/bin/mhm2 KOKKOS_OFF
+  _run_proxy KOKKOS_OFF
 }
 
 run_proxy_kokkos_on() {
-  _run_proxy ./mhm2_kokkos_install_gpu_HIP_KOKKOS_ON_eldorado/bin/mhm2 KOKKOS_ON
+  _run_proxy KOKKOS_ON
 }
 
 # Small — scale 1, 2, 4, 6, …, 16 ranks when RUN_BENCHMARK_LOOP is set
