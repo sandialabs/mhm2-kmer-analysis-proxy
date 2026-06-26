@@ -273,7 +273,6 @@ void build_supermers(Kokkos::View<char *> seqs_v, Kokkos::View<int *> kmer_targe
         }
       },
       num_valid_kmers);
-  Kokkos::fence();
 }
 
 KOKKOS_INLINE_FUNCTION uint8_t get_packed_val(char base) {
@@ -319,7 +318,6 @@ void pack_seqs(Kokkos::View<char *> dev_seqs_v, Kokkos::View<char *> dev_packed_
 
         dev_packed_seqs_v(i) = packed;
       });
-  Kokkos::fence();
 }
 
 kcount_gpu::ParseAndPackGPUDriver::ParseAndPackGPUDriver(int upcxx_rank_me, int upcxx_rank_n, int qual_offset, int kmer_len,
@@ -391,8 +389,6 @@ bool kcount_gpu::ParseAndPackGPUDriver::process_seq_block(const string &seqs, un
 
   Kokkos::deep_copy(Kokkos::subview(h_supermers_v, std::pair<size_t, size_t>(0, h_num_supermers_v())),
                     Kokkos::subview(dev_supermers_v, std::pair<size_t, size_t>(0, h_num_supermers_v())));
-
-  Kokkos::fence();
 
   return true;
 }
