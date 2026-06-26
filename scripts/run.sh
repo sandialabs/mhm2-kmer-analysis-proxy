@@ -43,12 +43,22 @@ export KOKKOS_USE="${KOKKOS_USE:=KOKKOS_ON}"
 export BACKEND="${BACKEND:=HIP}"
 export NUM_RANKS=${NUM_RANKS:=2}
 
+RUN_TS=$(date +"%Y%m%d_%H%M%S")
+RUN_HASH=$(printf '%s' "${RUN_TS}" | md5sum | awk '{print substr($1, 1, 8)}')
+export RESULTS_DIR="${ROOT}/results/results_${RUN_TS}_${RUN_HASH}"
+export CSV_DIR="${RESULTS_DIR}/csv"
+mkdir -p "${RESULTS_DIR}" "${CSV_DIR}"
+echo "Results batch: ${RESULTS_DIR}"
+echo "CSV output:    ${CSV_DIR}"
+echo
+
 _run_proxy() {
   local kokkos_use=$1
 
   export KOKKOS_USE=${kokkos_use}
-  local mhm2_bin="${ROOT}/mhm2_kokkos_install_gpu_${BACKEND}_${KOKKOS_USE}/bin/mhm2"
-  export PROXY_OUTPUT="${ROOT}/${KOKKOS_USE}_${BACKEND}_ranks_${NUM_RANKS}"
+  local install_dir="${ROOT}/install_${BACKEND}_${KOKKOS_USE}"
+  local mhm2_bin="${install_dir}/bin/mhm2"
+  export PROXY_OUTPUT="${RESULTS_DIR}/${KOKKOS_USE}_${BACKEND}_ranks_${NUM_RANKS}"
   mkdir -p "${PROXY_OUTPUT}"
 
   if [ ! -x "${mhm2_bin}" ]; then
@@ -67,6 +77,13 @@ _run_proxy() {
   ${DATA_SMALL}/36_S23_R1_001_trim2mil.fastq \
   ${DATA_SMALL}/36_S23_R2_001_trim2mil.fastq \
   --output "${PROXY_OUTPUT}"
+
+  shopt -s nullglob
+  for csv_file in "${ROOT}"/*.csv; do
+    base=$(basename "${csv_file}" .csv)
+    cp "${csv_file}" "${CSV_DIR}/${base}_ranks_${NUM_RANKS}.csv"
+  done
+  shopt -u nullglob
 }
 
 run_proxy_kokkos_off() {

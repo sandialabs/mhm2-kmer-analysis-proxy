@@ -74,7 +74,7 @@ git clone https://github.com/LoganWilliams1/mhm2_kmer_analysis_v2.git
 cd mhm2_kmer_analysis_v2
 ```
 
-Build and install with `scripts/build.sh` from the repository root. The script checks for UPC++, configures CMake, and installs the `mhm2` binary under `mhm2_kokkos_install_gpu_<BACKEND>_<KOKKOS_USE>/` in the repository (for example, `mhm2_kokkos_install_gpu_HIP_KOKKOS_ON/`).
+Build and install with `scripts/build.sh` from the repository root. The script checks for UPC++, configures CMake, and installs the `mhm2` binary under `install_<BACKEND>_<KOKKOS_USE>/` in the repository (for example, `install_HIP_KOKKOS_ON/`).
 
 ```bash
 ./scripts/build.sh
