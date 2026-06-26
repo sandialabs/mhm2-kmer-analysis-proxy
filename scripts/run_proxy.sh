@@ -1,12 +1,11 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
-
-echo "##########################################################"
-echo "   PROXY ON mi300a (el dorado ... the cities of gold )   "
-echo "##########################################################"
+echo "####################################################################"
+echo "                     PROXY RUNNER                                   "
+echo "####################################################################"
 echo -e "\n\n"
 
-echo -e "upcxx executables:  `which upcxx`"
+echo -e "upcxx executables:  $(which upcxx)"
 echo -e "\n\n"
 
 export GASNET_BACKTRACE=1
@@ -15,10 +14,8 @@ export GASNET_BACKTRACE=1
 
 export DATE=$(date +"%Y-%m-%d")
 
-#Update to match your project base directory
 export ROOT=/projects/proxy_apps
 
-#Path to example input
 export DATA_ROOT_COW=${ROOT}/assembler_input_datasets/gavin_lab_data/CowMetaGenome
 
 # 36_S23_R1_001_trim2mil.fastq
@@ -40,6 +37,7 @@ export INPUT_SIZE="small"
 #export INPUT_SIZE="large"
 
 export WORKING_DIR=${ROOT}/jciesko_workspace
+cd "${WORKING_DIR}"
 
 export APP="mhm2-proxy"
 export MACHINE="eldorado"
@@ -76,14 +74,14 @@ run_proxy_kokkos_on() {
   _run_proxy ./mhm2_kokkos_install_gpu_HIP_KOKKOS_ON_eldorado/bin/mhm2 KOKKOS_ON
 }
 
-# Small — scale 1, 2, 4, 6, …, 32 ranks when RUN_BENCHMARK_LOOP is set
+# Small — scale 1, 2, 4, 6, …, 16 ranks when RUN_BENCHMARK_LOOP is set
 if [ -n "${RUN_BENCHMARK_LOOP}" ]; then
   for NUM_RANKS in 1 $(seq 2 2 16); do
     export NUM_RANKS
     if [ "${KOKKOS_USE}" == "KOKKOS_OFF" ]; then
       run_proxy_kokkos_off
     else
-      run_proxy_kokkos_onls
+      run_proxy_kokkos_on
     fi
   done
 else

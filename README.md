@@ -1,136 +1,206 @@
-# MetaHipMer2 Proxy Apps
+# MetaHipMer2 Kmer Analysis Proxy App
 
-Performance-portable proxy applications derived from [MetaHipMer2 (de novo metagenome assembler)](https://bitbucket.org/berkeleylab/mhm2/src/master/)
+Performance-portable proxy application derived from [MetaHipMer2 (MHM2)](https://bitbucket.org/berkeleylab/mhm2/src/master/), an exascale *de novo* metagenome assembler developed at Lawrence Berkeley National Laboratory.
 
-## [mhm2-kmer-analysis](github project here)
+This application encapsulates the **kmer analysis stage** of the [MHM2 pipeline](https://www.nature.com/articles/s41598-020-67416-5/figures/7). Kmers are short DNA substrings of fixed length *k*, typically extracted from sequencing reads. They are a core data structure in genome assembly and many other bioinformatics workflows.
 
+For a given set of FASTQ inputs and kmer length *k*, the app builds a distributed hash table of kmers. Keys are unique kmers; values store occurrence counts and the most probable single-base extensions. The result is a compact representation of kmer abundance and connectivity used by downstream assembly stages.
+
+For background on the full MHM2 application, see the [JGI MetaHipMer page](https://jgi.doe.gov/data-and-tools/software-tools/metahipmer/) and the [MHM2 user guide](https://bitbucket.org/berkeleylab/mhm2/src/660ae5ab13f6a2c576b17d8c9925d44cffb98c6d/docs/mhm_guide.md). For Kokkos-specific design notes, see [kokkos_implementation.md](kokkos_implementation.md).
+
+## Dependencies
+
+### UPC++ (required)
+
+MHM2 and this proxy are built on [UPC++](https://bitbucket.org/berkeleylab/upcxx/wiki/Home), a partitioned global address space (PGAS) library for C++.
+
+- [Installation instructions](https://bitbucket.org/berkeleylab/upcxx/wiki/INSTALL)
+- [Developer guide and documentation](https://bitbucket.org/berkeleylab/upcxx/wiki/README.md)
+
+UPC++ uses [GASNet](https://bitbucket.org/berkeleylab/gasnet/src/stable/) for communication. On InfiniBand systems, UPC++ typically uses MPI for process spawning; you may need to build with an MPI compiler wrapper (see [Build](#build) below).
+
+#### Example UPC++ configurations
+
+**Power9 / NVIDIA V100** ([Lassen](https://hpc.llnl.gov/hardware/compute-platforms/lassen)):
+
+```bash
+../configure \
+  --with-cxx="$(which mpicxx)" \
+  --with-cc="$(which mpicc)" \
+  --enable-udp \
+  --enable-mpi \
+  --enable-cuda \
+  --enable-ibv \
+  --with-cxxflags=-std=c++17 \
+  --prefix="${INSTALL_DIR}"
 ```
-git clone  tbd
 
+**AMD MI300A** ([El Capitan / RZAdams](https://hpc.llnl.gov/hardware/compute-platforms/rzadams)):
+
+```bash
+# ROCm / Cray environment
+export LD_LIBRARY_PATH="${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}"
+
+../configure \
+  --with-cxx=mpicxx \
+  --with-cc=mpicc \
+  --with-pmi-rpath \
+  --with-ofi-spawner=pmi \
+  --enable-udp \
+  --enable-hip \
+  --enable-mpi \
+  --enable-ofi \
+  --with-cxxflags=-std=c++17 \
+  --with-default-network=ofi \
+  --with-ofi-provider=cxi \
+  --prefix="${INSTALL_DIR}"
 ```
+
+### Kokkos (recommended)
+
+[Kokkos](https://kokkos.org/) provides a performance-portable programming model for GPU-accelerated kernels. This proxy includes a Kokkos implementation of key kmer-counting routines, allowing the same code to target NVIDIA and AMD GPUs while interoperating with UPC++ host code.
+
+- [Kokkos releases](https://github.com/kokkos/kokkos/releases)
+- [Quick start guide](https://kokkos.org/kokkos-core-wiki/quick_start.html)
+
+Build this app and Kokkos with the **same compiler toolchain**.
+
 ## Build
 
-```
-env tbd
+### Clone the repository
 
-```
-
-
-```
-TBD
+```bash
+git clone https://github.com/LoganWilliams1/mhm2_kmer_analysis_v2.git
+cd mhm2_kmer_analysis_v2
 ```
 
-# Required Third-Party Library 
+### Generic build
 
-## [UPC++:  a PGAS library for C++](https://bitbucket.org/berkeleylab/upcxx/src/master/)
+The core build logic lives in `scripts/build.sh`, inherited from parent MHM2 with minor changes to accept additional CMake options. By default it installs the `mhm2` binary under `install/bin`.
 
-  - [UPC++ basic build recipe](https://bitbucket.org/berkeleylab/upcxx/src/master/INSTALL.md)
-  - [UPC++ Developers Guide](https://bytebucket.org/berkeleylab/upcxx/wiki/docs/guide.pdf?rev=767d43b34dd00f6b2765a49d6ebf55bee91f4579)
-  - [UPC++ Specification](https://bytebucket.org/berkeleylab/upcxx/wiki/docs/spec.pdf?rev=767d43b34dd00f6b2765a49d6ebf55bee91f4579)
-
-**Nota bene:  [UPC++ uses GASNet for PGAS communication primitives](https://bitbucket.org/berkeleylab/gasnet/src/stable/)**
-
-
-### UPC++ for Supercomputers
-
-#### Architectures
-
-  - [Power9/NVIDIA V100](https://hpc.llnl.gov/hardware/compute-platforms/lassen)
-
-```
-../configure \
---with-cxx=`which mpicxx` \
---with-cc=`which mpicc` \
---enable-udp \
---enable-mpi \
---enable-cuda \
---enable-ibv \
---with-cxxflags=-std=c++17 \
---prefix=${INSTALL_DIR}
-
-
-``
-
-  -  [MI300A](https://hpc.llnl.gov/hardware/compute-platforms/rzadams)
-
-```
-# for rocm / cray env 
-export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
-
+```bash
+./scripts/build.sh Release
 ```
 
+Kokkos-enabled build:
 
-```
-../configure \
---with-cxx=mpicxx \
---with-cc=mpicc \
---with-pmi-rpath \
---with-ofi-spawner=pmi \
---enable-udp \
---enable-hip \
---enable-mpi \
---enable-ofi \
---with-cxxflags=-std=c++17 \
---with-default-network=ofi \
---with-ofi-provider=cxi \
---prefix=${INSTALL_DIR}
-
+```bash
+./scripts/build.sh Release \
+  -DENABLE_KOKKOS=ON \
+  -DCMAKE_CXX_COMPILER="$(which mpicxx)"
 ```
 
+On InfiniBand systems, specify the MPI C++ wrapper explicitly if the default compiler is not MPI-aware. See the [UPC++ Linux configuration notes](https://bitbucket.org/berkeleylab/upcxx/wiki/INSTALL#markdown-header-configuration-linux).
 
-## Kokkos
+### Proxy build script (El Dorado / MI300A)
 
-  - [Kokkos Quick Start](https://kokkos.org/kokkos-core-wiki/quick_start.html) 
+For site-specific Kokkos and install paths on El Dorado, use the consolidated build script:
 
+```bash
+./scripts/build_proxy.sh
+KOKKOS_USE=KOKKOS_OFF ./scripts/build_proxy.sh
+```
 
-# Running
+Set `KOKKOS_USE` to `KOKKOS_ON` (default) or `KOKKOS_OFF`. The script runs `scripts/build.sh` from the repository root with the appropriate Kokkos install, C++ standard, and install prefix.
 
-# Inputs
+## Run
 
-## Synthetic Reads to Benchmark
+### Python wrapper
 
-  - [ArcticSynth Simulated Sequences](https://portal.nersc.gov/project/hipmer/MetaHipMer_datasets_12_2019/ArcticSynth/)
-  - [Detailed in, "Terabase-scale metagenome coassembly with MetaHipMer"](https://www.nature.com/articles/s41598-020-67416-5) and in [Supplemental Info](https://static-content.springer.com/esm/art%3A10.1038%2Fs41598-020-67416-5/MediaObjects/41598_2020_67416_MOESM1_ESM.pdf)
+`run_app.py` provides a convenient launcher. A minimal run requires the number of UPC++ processes and at least one FASTQ input:
 
-## NCBI Short-Read Archive
+```bash
+./run_app.py -n 1 -p seqs_1.fastq seqs_2.fastq
+```
 
-  - [Gut Microbiota in Long-Lived Humans, 2020](https://pubmed.ncbi.nlm.nih.gov/32209716/)
-    - Project:  PRJNA553191 
-    - Accession:  [SRR9654970](https://www.ncbi.nlm.nih.gov/sra/?term=SRR9654970)
-    - Dataset size:  1.8 Gb
+#### Run options
 
-  - [Ovine Gut Microbes](https://pubmed.ncbi.nlm.nih.gov/24170804/)
-    - Project:  PRJNA214227
-    - Accession:  [SRX331704](https://www.ncbi.nlm.nih.gov/sra/?term=SRX331704)
+| Option | Description |
+|--------|-------------|
+| `-n INT` | Number of UPC++ processes (**required**) |
+| `-N INT` | Number of nodes (default: 1) |
+| `-p FILE ...` | Separate paired-end reads; each R1 file must be immediately followed by its R2 mate |
+| `-r FILE ...` | Interleaved paired-end reads |
+| `-u FILE ...` | Unpaired reads |
+| `-k INT` | Kmer length (default: 21) |
+| `-o STRING` | Output directory (default: `mhm2-run-<READS>-n<PROCS>-N<NODES>-YYMMDDhhmmss-<JOBID>`) |
+| `--use-qf=BOOL` | **Non-Kokkos GPU builds only.** When true, reduces GPU memory use at the cost of negligible variation in kmer counts. See [kokkos_implementation.md](kokkos_implementation.md). |
 
-  - [Terabase-scale metagenome coassembly with MetaHipMer](https://pubmed.ncbi.nlm.nih.gov/32612216/)
-    - Project:  [PRJNA367436](https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA367436)
-    - Accession:  [SRR5819383](https://www.ncbi.nlm.nih.gov/sra/SRR5819383)
-    - Dataset size:  15.9 Gb 
+Example with two paired libraries:
 
-## NCBI Tools
+```bash
+./run_app.py -n 4 -p lib1_1.fastq lib1_2.fastq lib2_1.fastq lib2_2.fastq
+```
 
-  - Install [SRA  Toolkit](https://github.com/ncbi/sra-tools/wiki/02.-Installing-SRA-Toolkit) to interact with ["Short Read Archive" (SRA)](https://www.ncbi.nlm.nih.gov/sra)
+### El Dorado run script
 
+For benchmark runs on El Dorado with preconfigured inputs and install paths:
 
+```bash
+./scripts/run_proxy.sh
+RUN_BENCHMARK_LOOP=1 ./scripts/run_proxy.sh
+```
 
-# Further Reading 
+Environment variables:
 
-## MetaHipMer2 - MHM2 (Parent App)
-[MetaHipMer (*MHM*)](https://sites.google.com/lbl.gov/exabiome/downloads?authuser=0) is a *de novo* metagenome short-read assembler. This is version 2 (MHM2), which is written entirely in
-[UPC++](https://upcxx.lbl.gov), CUDA and HIP, and runs efficiently on both single servers and on multinode supercomputers, where it can scale up to
-coassemble terabase-sized metagenomes. More information about MetaHipMer can be found under the [ExaBiome Project](https://sites.google.com/lbl.gov/exabiome) 
-of the [Exascale Computing Project](https://www.exascaleproject.org) and in several publications:
+| Variable | Description |
+|----------|-------------|
+| `KOKKOS_USE` | `KOKKOS_ON` (default) or `KOKKOS_OFF` |
+| `NUM_RANKS` | Number of UPC++ ranks (default: 2) |
+| `RUN_BENCHMARK_LOOP` | If set, sweep ranks 1, 2, 4, …, 16 |
 
-- [E. Georganas et al., "Extreme Scale De Novo Metagenome Assembly," SC18: International Conference for High Performance Computing, Networking, Storage and Analysis, Dallas, TX, USA, 2018, pp. 122-13.](https://ieeexplore.ieee.org/document/8665813)
-- [Hofmeyr, S., Egan, R., Georganas, E. et al. Terabase-scale metagenome coassembly with MetaHipMer. Sci Rep 10, 10689 (2020).](https://www.nature.com/articles/s41598-020-67416-5#citeas)
-- [Awan, M.G., Deslippe, J., Buluc, A. et al. ADEPT: a domain independent sequence alignment strategy for gpu architectures. BMC Bioinformatics 21, 406 (2020).](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-020-03720-1#citeas)
-- [Muaaz Awan, Steven Hofmeyr, Rob Egan et al. "Accelerating large scale de novo metagenome assembly using GPUs.", SC 2021](https://dl.acm.org/doi/pdf/10.1145/3458817.3476212)
+Results are written to `proxy_results_summary.csv` in the run directory, including read counts, kmer statistics, peak memory, and timing.
 
-The quality of MetaHipMer assemblies is comparable with other leading metagenome assemblers, as documented in the results of the CAMI2 competition, where MetaHipMer was rated first for quality in two out of three datasets, and second in the third dataset:
+## Docker (experimental)
 
-- [F. Meyer et al., "Critical Assessment of Metagenome Interpretation: the second round of challenges", Nature Methods volume 19, pages429–440 (2022)](https://www.nature.com/articles/s41592-022-01431-4)
+Docker support is experimental. It is limited to a **single machine** and **CPUs only** (no GPUs).
 
-Information about building, installing and running MHM2 can be found in the [user guide](docs/mhm_guide.md)
+Build a MetaHipMer image directly from the Bitbucket repository without cloning it locally:
 
-MHM2 is developed and maintained by the [Exabiome Project](https://sites.google.com/lbl.gov/exabiome/) at Lawrence Berkeley National Laboratory, and is supported by the [Exascale Computing Project](https://www.exascaleproject.org) (17-SC-20-SC), a collaborative effort of the U.S. Department of Energy Office of Science and the National Nuclear Security Administration.
+```bash
+docker build -t local/mhm2:latest https://bitbucket.org/berkeleylab/mhm2.git#master
+```
+
+To force a full rebuild and pick up the latest upstream changes, add `--no-cache`:
+
+```bash
+docker build --no-cache -t local/mhm2:latest https://bitbucket.org/berkeleylab/mhm2.git#master
+```
+
+When running the container, set `--shm-size` (typically 1–2 GB per process) and mount a host directory for inputs and outputs. On a 32-process run:
+
+```bash
+docker run --shm-size=32g --volume "${datadir}:/scratch" local/mhm2:latest \
+  mhm2.py -r /scratch/arctic_sample_0.fq
+```
+
+Here `${datadir}` is the host directory containing input files; outputs are written there as well.
+
+## Benchmark inputs
+
+### Synthetic reads
+
+- [ArcticSynth simulated sequences](https://portal.nersc.gov/project/hipmer/MetaHipMer_datasets_12_2019/ArcticSynth/)
+- Described in [*Terabase-scale metagenome coassembly with MetaHipMer*](https://www.nature.com/articles/s41598-020-67416-5) and [supplemental materials](https://static-content.springer.com/esm/art%3A10.1038%2Fs41598-020-67416-5/MediaObjects/41598_2020_67416_MOESM1_ESM.pdf)
+
+### NCBI Sequence Read Archive
+
+| Study | Accession | Size |
+|-------|-----------|------|
+| [Gut microbiota in long-lived humans (2020)](https://pubmed.ncbi.nlm.nih.gov/32209716/) | [SRR9654970](https://www.ncbi.nlm.nih.gov/sra/?term=SRR9654970) (PRJNA553191) | 1.8 GB |
+| [Ovine gut microbes](https://pubmed.ncbi.nlm.nih.gov/24170804/) | [SRX331704](https://www.ncbi.nlm.nih.gov/sra/?term=SRX331704) (PRJNA214227) | — |
+| [Terabase-scale metagenome coassembly](https://pubmed.ncbi.nlm.nih.gov/32612216/) | [SRR5819383](https://www.ncbi.nlm.nih.gov/sra/SRR5819383) (PRJNA367436) | 15.9 GB |
+
+Install the [SRA Toolkit](https://github.com/ncbi/sra-tools/wiki/02.-Installing-SRA-Toolkit) to download reads from the [Short Read Archive](https://www.ncbi.nlm.nih.gov/sra).
+
+## Further reading
+
+MHM2 runs efficiently on single nodes and at exascale, scaling to terabase-sized metagenome coassemblies. Key publications:
+
+- [E. Georganas et al., "Extreme Scale De Novo Metagenome Assembly," SC18, 2018.](https://ieeexplore.ieee.org/document/8665813)
+- [Hofmeyr, S. et al., "Terabase-scale metagenome coassembly with MetaHipMer," *Scientific Reports*, 2020.](https://www.nature.com/articles/s41598-020-67416-5)
+- [Awan, M.G. et al., "ADEPT: a domain independent sequence alignment strategy for gpu architectures," *BMC Bioinformatics*, 2020.](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-020-03720-1)
+- [Muaaz Awan et al., "Accelerating large scale de novo metagenome assembly using GPUs," SC 2021.](https://dl.acm.org/doi/pdf/10.1145/3458817.3476212)
+- [F. Meyer et al., "Critical Assessment of Metagenome Interpretation: the second round of challenges," *Nature Methods*, 2022.](https://www.nature.com/articles/s41592-022-01431-4) — MetaHipMer ranked first for quality on two of three CAMI2 datasets.
+
+MHM2 is developed by the [ExaBiome Project](https://sites.google.com/lbl.gov/exabiome/) and supported by the [Exascale Computing Project](https://www.exascaleproject.org) (17-SC-20-SC).
