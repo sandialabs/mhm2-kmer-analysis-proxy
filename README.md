@@ -204,3 +204,10 @@ MHM2 runs efficiently on single nodes and at exascale, scaling to terabase-sized
 - [F. Meyer et al., "Critical Assessment of Metagenome Interpretation: the second round of challenges," *Nature Methods*, 2022.](https://www.nature.com/articles/s41592-022-01431-4) — MetaHipMer ranked first for quality on two of three CAMI2 datasets.
 
 MHM2 is developed by the [ExaBiome Project](https://sites.google.com/lbl.gov/exabiome/) and supported by the [Exascale Computing Project](https://www.exascaleproject.org) (17-SC-20-SC).
+
+## Point of contact
+
+For questions about this proxy application:
+
+- Amy Powell — [ajpowel@sandia.gov](mailto:ajpowel@sandia.gov)
+- Jan Ciesko — [jciesko@sandia.gov](mailto:jciesko@sandia.gov)
