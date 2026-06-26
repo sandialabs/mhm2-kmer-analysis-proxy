@@ -103,17 +103,15 @@ void Supermer::unpack() {
 
 int Supermer::get_bytes() { return seq.length() + sizeof(kmer_count_t); }
 
-
 // Return the extra per-element byte estimate needed by the aggregation store
 // for non-trivial types. Trivial/trivially-copyable/trivially-serializable
 // types need no extra estimate; types like Supermer, which contain std::string,
 // need a conservative nonzero estimate for dynamically owned storage.
 template <typename T, int MAX_K>
 constexpr size_t aggr_extra_bytes() {
-  return (std::is_trivial<T>::value || std::is_trivially_copyable<T>::value ||
-          upcxx::is_trivially_serializable<T>::value)
-             ? 0
-             : 2 * MAX_K;
+  return (std::is_trivial<T>::value || std::is_trivially_copyable<T>::value || upcxx::is_trivially_serializable<T>::value) ?
+             0 :
+             2 * MAX_K;
 }
 
 template <int MAX_K>

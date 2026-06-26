@@ -121,9 +121,9 @@ inline __device__ T warpReduceSum(T val) {
     // Required for sm_70+ (Volta and later, including Blackwell sm_100)
     // Using fixed full mask is simpler and avoids potential issues with __ballot_sync
 #if __CUDA_ARCH__ < 700
-    val += __shfl_down(val, offset);      // pre-Volta path (removed in sm_70+).
+    val += __shfl_down(val, offset);  // pre-Volta path (removed in sm_70+).
 #else
-    val += __shfl_down_sync(mask, val, offset); // new path
+    val += __shfl_down_sync(mask, val, offset);  // new path
 #endif
 #else
     static_assert(false, "Must define HIP_GPU or CUDA_GPU");
@@ -131,7 +131,6 @@ inline __device__ T warpReduceSum(T val) {
   }
   return val;
 }
-
 
 template <typename T>
 inline __device__ T blockReduceSum(T val) {
@@ -157,7 +156,7 @@ inline __device__ T blockReduceSum(T val) {
   // read from shared memory only if that warp existed
   val = (threadIdx.x < num_warps) ? shared[lane_id] : 0;
 
-  if (warp_id == 0) val = warpReduceSum(val); // reduce across active warps
+  if (warp_id == 0) val = warpReduceSum(val);  // reduce across active warps
   __syncthreads();
   return val;
 };

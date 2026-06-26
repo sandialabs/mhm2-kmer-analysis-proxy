@@ -2006,8 +2006,8 @@ auto search(const T &set, const V &val) -> std::pair<bool, decltype(std::begin(d
 
 /// A search function with a filter function
 template <typename T, typename V>
-auto search(const T &set, const V &val,
-            const std::function<V(V)> &filter_function) -> std::pair<bool, decltype(std::begin(detail::smart_deref(set)))> {
+auto search(const T &set, const V &val, const std::function<V(V)> &filter_function)
+    -> std::pair<bool, decltype(std::begin(detail::smart_deref(set)))> {
   using element_t = typename detail::element_type<T>::type;
   // do the potentially faster first search
   auto res = search(set, val);

@@ -63,7 +63,7 @@ using upcxx_utils::get_basename;
 using upcxx_utils::IntermittentTimer;
 using upcxx_utils::Timer;
 
-#define INT_CEIL(numerator, denominator) (((numerator) - 1) / (denominator) + 1)
+#define INT_CEIL(numerator, denominator) (((numerator)-1) / (denominator) + 1)
 #define BUF_SIZE 2047
 
 class FastqReader {

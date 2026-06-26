@@ -102,7 +102,7 @@
   {                       \
     int x = (i) - (w);    \
     x = x > 0 ? x : 0;    \
-    (u) = (j) - x + 1;    \
+    (u) = (j)-x + 1;      \
   }
 
 /* Convert the coordinate in the direction matrix into the coordinate in one line of the band. */
@@ -110,7 +110,7 @@
   {                          \
     int x = (i) - (w);       \
     x = x > 0 ? x : 0;       \
-    x = (j) - x;             \
+    x = (j)-x;               \
     (u) = x * 3 + p;         \
   }
 

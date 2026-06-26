@@ -138,7 +138,7 @@ int CalculateNumberMismatch(StripedSmithWaterman::Alignment* al, int8_t const* r
       new_cigar_string << al->query_begin << 'S';
       query += al->query_begin;
     }
-  }                   // else it will be processed normally
+  }  // else it will be processed normally
 
   bool in_M = false;  // the previous is match
   bool in_X = false;  // the previous is mismatch
@@ -312,19 +312,17 @@ Aligner::Aligner(const Aligner& aligner)
     , ambiguity_penalty_(aligner.ambiguity_penalty_)
     , translated_reference_(NULL)
     , reference_length_(0) {
-  
-  assert (aligner.score_matrix_ != NULL);
+  assert(aligner.score_matrix_ != NULL);
   assert(score_matrix_size_ > 0);
   assert(score_matrix_size_ < 100);
   score_matrix_ = new int8_t[score_matrix_size_ * score_matrix_size_];
-  
+
   memcpy(score_matrix_, aligner.score_matrix_, sizeof(int8_t) * score_matrix_size_ * score_matrix_size_);
 
   assert(aligner.translation_matrix_ != NULL);
   auto translation_matrix_size = SizeOfArray(kBaseTranslation);
   translation_matrix_ = new int8_t[translation_matrix_size];
   memcpy(translation_matrix_, aligner.translation_matrix_, sizeof(int8_t) * translation_matrix_size);
-  
 }
 
 Aligner::~Aligner(void) { Clear(); }

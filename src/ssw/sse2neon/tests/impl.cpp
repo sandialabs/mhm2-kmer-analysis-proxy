@@ -6474,7 +6474,7 @@ result_t test_mm_shuffle_epi32(const SSE2NEONTestImpl &impl, uint32_t iter)
     int32_t _d[4];
 
 #define TEST_IMPL(IDX)              \
-    _d[0] = _a[((IDX) & 0x3)];      \
+    _d[0] = _a[((IDX) &0x3)];       \
     _d[1] = _a[((IDX >> 2) & 0x3)]; \
     _d[2] = _a[((IDX >> 4) & 0x3)]; \
     _d[3] = _a[((IDX >> 6) & 0x3)]; \
@@ -10194,22 +10194,24 @@ result_t test_mm_testz_si128(const SSE2NEONTestImpl &impl, uint32_t iter)
 
 #define DEF_ENUM_MM_CMPESTRX_VARIANT(c, ...) c,
 
-#define EVAL_MM_CMPESTRX_TEST_CASE(c, type, data_type, im, IM)               \
-    do {                                                                     \
-        data_type *a = test_mm_##im##_##type##_data[c].a,                    \
-                  *b = test_mm_##im##_##type##_data[c].b;                    \
-        int la = test_mm_##im##_##type##_data[c].la,                         \
-            lb = test_mm_##im##_##type##_data[c].lb;                         \
-        const int imm8 = IMM_##c;                                            \
-        IIF(IM)(int expect = test_mm_##im##_##type##_data[c].expect,         \
-                data_type *expect = test_mm_##im##_##type##_data[c].expect); \
-        __m128i ma, mb;                                                      \
-        memcpy(&ma, a, sizeof(ma));                                          \
-        memcpy(&mb, b, sizeof(mb));                                          \
-        IIF(IM)(int res = _mm_##im(ma, la, mb, lb, imm8),                    \
-                __m128i res = _mm_##im(ma, la, mb, lb, imm8));               \
-        if (IIF(IM)(res != expect, memcmp(expect, &res, sizeof(__m128i))))   \
-            return TEST_FAIL;                                                \
+#define EVAL_MM_CMPESTRX_TEST_CASE(c, type, data_type, im, IM)             \
+    do {                                                                   \
+        data_type *a = test_mm_##im##_##type##_data[c].a,                  \
+                  *b = test_mm_##im##_##type##_data[c].b;                  \
+        int la = test_mm_##im##_##type##_data[c].la,                       \
+            lb = test_mm_##im##_##type##_data[c].lb;                       \
+        const int imm8 = IMM_##c;                                          \
+        IIF(IM)                                                            \
+        (int expect = test_mm_##im##_##type##_data[c].expect,              \
+         data_type *expect = test_mm_##im##_##type##_data[c].expect);      \
+        __m128i ma, mb;                                                    \
+        memcpy(&ma, a, sizeof(ma));                                        \
+        memcpy(&mb, b, sizeof(mb));                                        \
+        IIF(IM)                                                            \
+        (int res = _mm_##im(ma, la, mb, lb, imm8),                         \
+         __m128i res = _mm_##im(ma, la, mb, lb, imm8));                    \
+        if (IIF(IM)(res != expect, memcmp(expect, &res, sizeof(__m128i)))) \
+            return TEST_FAIL;                                              \
     } while (0);
 
 #define ENUM_MM_CMPESTRX_TEST_CASES(type, type_lower, data_type, func, FUNC, \
@@ -11631,20 +11633,22 @@ result_t test_mm_cmpgt_epi64(const SSE2NEONTestImpl &impl, uint32_t iter)
 
 #define DEF_ENUM_MM_CMPISTRX_VARIANT(c, ...) c,
 
-#define EVAL_MM_CMPISTRX_TEST_CASE(c, type, data_type, im, IM)               \
-    do {                                                                     \
-        data_type *a = test_mm_##im##_##type##_data[c].a,                    \
-                  *b = test_mm_##im##_##type##_data[c].b;                    \
-        const int imm8 = IMM_##c;                                            \
-        IIF(IM)(int expect = test_mm_##im##_##type##_data[c].expect,         \
-                data_type *expect = test_mm_##im##_##type##_data[c].expect); \
-        __m128i ma, mb;                                                      \
-        memcpy(&ma, a, sizeof(ma));                                          \
-        memcpy(&mb, b, sizeof(mb));                                          \
-        IIF(IM)(int res = _mm_##im(ma, mb, imm8),                            \
-                __m128i res = _mm_##im(ma, mb, imm8));                       \
-        if (IIF(IM)(res != expect, memcmp(expect, &res, sizeof(__m128i))))   \
-            return TEST_FAIL;                                                \
+#define EVAL_MM_CMPISTRX_TEST_CASE(c, type, data_type, im, IM)             \
+    do {                                                                   \
+        data_type *a = test_mm_##im##_##type##_data[c].a,                  \
+                  *b = test_mm_##im##_##type##_data[c].b;                  \
+        const int imm8 = IMM_##c;                                          \
+        IIF(IM)                                                            \
+        (int expect = test_mm_##im##_##type##_data[c].expect,              \
+         data_type *expect = test_mm_##im##_##type##_data[c].expect);      \
+        __m128i ma, mb;                                                    \
+        memcpy(&ma, a, sizeof(ma));                                        \
+        memcpy(&mb, b, sizeof(mb));                                        \
+        IIF(IM)                                                            \
+        (int res = _mm_##im(ma, mb, imm8),                                 \
+         __m128i res = _mm_##im(ma, mb, imm8));                            \
+        if (IIF(IM)(res != expect, memcmp(expect, &res, sizeof(__m128i)))) \
+            return TEST_FAIL;                                              \
     } while (0);
 
 #define ENUM_MM_CMPISTRX_TEST_CASES(type, type_lower, data_type, func, FUNC, \

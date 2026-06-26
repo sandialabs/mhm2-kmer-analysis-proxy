@@ -800,7 +800,7 @@ void walk_graph(CtgGraph *graph, int max_kmer_len, int kmer_len, int break_scaff
     SLOG_VERBOSE("Didn't visit ", tot_unvisited, " vertices, max len ", tot_max_unvisited_len, " total length ", tot_unvisited_len,
                  "\n");
   walk_stats.print();
-  
+
 #ifdef DEBUG
   dist_ofstream walks_ofs("walks-" + to_string(kmer_len));
   for (auto &walk : walks) {
@@ -820,7 +820,7 @@ void walk_graph(CtgGraph *graph, int max_kmer_len, int kmer_len, int break_scaff
   }
   walks_ofs.close();
 #endif
-  
+
   get_ctgs_from_walks(max_kmer_len, kmer_len, break_scaff_Ns, walks, ctgs, use_blastn_scores);
   barrier();
 }

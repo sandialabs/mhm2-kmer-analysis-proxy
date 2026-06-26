@@ -640,7 +640,7 @@ ostream &operator<<(ostream &out, const Kmer<MAX_K> &k) {
   return out << k.to_string();
 }
 
-#define KMER_K(KMER_LEN) template ostream &operator<< <KMER_LEN>(ostream & out, const Kmer<KMER_LEN> &k);
+#define KMER_K(KMER_LEN) template ostream &operator<< <KMER_LEN>(ostream &out, const Kmer<KMER_LEN> &k);
 
 KMER_K(32);
 #if MAX_BUILD_KMER >= 64

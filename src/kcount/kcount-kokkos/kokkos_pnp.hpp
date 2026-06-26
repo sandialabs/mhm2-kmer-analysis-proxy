@@ -72,16 +72,16 @@ class ParseAndPackGPUDriver {
   Kokkos::View<char *> dev_packed_seqs_v;
   Kokkos::View<unsigned int> dev_num_supermers_v;
   Kokkos::View<unsigned int> dev_num_valid_kmers_v;
-/*
-  Kokkos::View<char *>::HostMirror h_seqs_v;
-  Kokkos::View<char *>::HostMirror h_packed_seqs_v;
-  Kokkos::View<unsigned int>::HostMirror h_num_valid_kmers_v;
-*/
-/*
-  Kokkos::View<char *, Kokkos::DefaultHostExecutionSpace::memory_space> h_seqs_v;
-  Kokkos::View<char *, Kokkos::DefaultHostExecutionSpace::memory_space> h_packed_seqs_v;
-  Kokkos::View<unsigned int, Kokkos::DefaultHostExecutionSpace::memory_space> h_num_valid_kmers_v;
-*/
+  /*
+    Kokkos::View<char *>::HostMirror h_seqs_v;
+    Kokkos::View<char *>::HostMirror h_packed_seqs_v;
+    Kokkos::View<unsigned int>::HostMirror h_num_valid_kmers_v;
+  */
+  /*
+    Kokkos::View<char *, Kokkos::DefaultHostExecutionSpace::memory_space> h_seqs_v;
+    Kokkos::View<char *, Kokkos::DefaultHostExecutionSpace::memory_space> h_packed_seqs_v;
+    Kokkos::View<unsigned int, Kokkos::DefaultHostExecutionSpace::memory_space> h_num_valid_kmers_v;
+  */
 
   Kokkos::View<char *>::host_mirror_type h_seqs_v;
   Kokkos::View<char *>::host_mirror_type h_packed_seqs_v;
@@ -97,10 +97,10 @@ class ParseAndPackGPUDriver {
   Kokkos::View<SupermerInfo *>::HostMirror h_supermers_v;
   Kokkos::View<unsigned int>::HostMirror h_num_supermers_v;
   */
-/*
-  Kokkos::View<SupermerInfo *, Kokkos::DefaultHostExecutionSpace::memory_space> h_supermers_v;
-  Kokkos::View<unsigned int, Kokkos::DefaultHostExecutionSpace::memory_space> h_num_supermers_v;
-*/
+  /*
+    Kokkos::View<SupermerInfo *, Kokkos::DefaultHostExecutionSpace::memory_space> h_supermers_v;
+    Kokkos::View<unsigned int, Kokkos::DefaultHostExecutionSpace::memory_space> h_num_supermers_v;
+  */
 
   Kokkos::View<SupermerInfo *>::host_mirror_type h_supermers_v;
   Kokkos::View<unsigned int>::host_mirror_type h_num_supermers_v;

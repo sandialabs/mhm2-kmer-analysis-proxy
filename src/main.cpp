@@ -77,15 +77,13 @@ using namespace upcxx_utils;
 
 // Needed to give compiler definition of environment, because we're moving towards portable ISO C++
 #ifdef _WIN32
-  // MSVC exports _environ instead of environ
-  extern char** _environ;
-  #define environ _environ
+// MSVC exports _environ instead of environ
+extern char **_environ;
+#define environ _environ
 #else
-  // POSIX‐style global
-  extern char** environ;
+// POSIX‐style global
+extern char **environ;
 #endif
-
-
 
 void init_devices();
 void done_init_devices();
@@ -358,7 +356,9 @@ void print_log_results(string output_dir, double elapsed_time, double pipeline_e
     return;
   }
 
-  cout << "\n\n\n----------------------------\n\n" << "proxy_results_summary.csv can be found in " << output_dir << "\n\n" << endl;
+  cout << "\n\n\n----------------------------\n\n"
+       << "proxy_results_summary.csv can be found in " << output_dir << "\n\n"
+       << endl;
 
   string line, token, total_kmers, unique_kmers, mem, read_count;
 
@@ -404,12 +404,12 @@ void print_log_results(string output_dir, double elapsed_time, double pipeline_e
 }
 
 // Call this function before Kokkos::initialize(...)
-bool parsePrintConfigFlag(int argc, char* argv[]) {
+bool parsePrintConfigFlag(int argc, char *argv[]) {
   // 1) Default off
   bool kokkosPrintConfig = false;
 
   // 2) Check environment variable KOKKOS_PRINT_CONFIG
-  if (const char* env = std::getenv("KOKKOS_PRINT_CONFIG")) {
+  if (const char *env = std::getenv("KOKKOS_PRINT_CONFIG")) {
     std::string e(env);
     // simple check: accept "1", "true", "on" (case-sensitive here)
     if (e == "1" || e == "true" || e == "on") {
@@ -431,8 +431,7 @@ bool parsePrintConfigFlag(int argc, char* argv[]) {
   return kokkosPrintConfig;
 }
 
-
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   BaseTimer total_timer("Total Time", nullptr);  // no PromiseReduce possible
   auto init_timings = init_upcxx(total_timer);
   auto am_root = !rank_me();
@@ -441,12 +440,10 @@ int main(int argc, char* argv[]) {
   // Decide once (e.g. from a cmd-line flag, env var, or hard-coded)
   bool kokkosPrintConfig = parsePrintConfigFlag(argc, argv);
 
-  if (kokkosPrintConfig) {							// KOKKOS INITIALIZE
-    auto settings = Kokkos::InitializationSettings()
-                      .set_print_configuration(true);
+  if (kokkosPrintConfig) {  // KOKKOS INITIALIZE
+    auto settings = Kokkos::InitializationSettings().set_print_configuration(true);
     Kokkos::initialize(settings);
-  }
-  else {
+  } else {
     // Use the argc/argv overload if not printing configuration
     Kokkos::initialize(argc, argv);
   }
@@ -472,7 +469,7 @@ int main(int argc, char* argv[]) {
 #if defined(ENABLE_GASNET_STATS)
     if (gasnet_statsfile) _gasnet_stats = true;
 #else
-  if (gasnet_statsfile) SWARN("No GASNet statistics will be collected - use Debug or RelWithDebInfo modes to enable collection.");
+    if (gasnet_statsfile) SWARN("No GASNet statistics will be collected - use Debug or RelWithDebInfo modes to enable collection.");
 #endif
 
     srand(rank_me() + 10);
@@ -482,7 +479,7 @@ int main(int argc, char* argv[]) {
     if (!options.load(argc, argv)) return 127;
     print_exec_cmd(argc, argv);
     vector<string> envvars;
-    for (char** env = environ; *env != nullptr; env++) {
+    for (char **env = environ; *env != nullptr; env++) {
       if (!strncmp(*env, "GASNET", strlen("GASNET"))) envvars.push_back(string(*env));
       if (!strncmp(*env, "UPCXX", strlen("UPCXX"))) envvars.push_back(string(*env));
       if (!strncmp(*env, "FI_", strlen("FI_"))) envvars.push_back(string(*env));
@@ -525,7 +522,8 @@ int main(int argc, char* argv[]) {
 
 #ifdef DEBUG
     _dbgstream.flush();
-    while (close_dbg());
+    while (close_dbg())
+      ;
     LOG("closed DBG.\n");
 #endif
 
@@ -541,22 +539,22 @@ int main(int argc, char* argv[]) {
     SLOG_VERBOSE("All ranks flushed logs: ", sh_flush_timings->to_string(), "\n");
 
     // Record timing and write summary before leaving the application scope.
-  #ifdef ENABLE_KOKKOS
+#ifdef ENABLE_KOKKOS
     Kokkos::fence();
-    kokkos_elapsed_time = kokkos_timer.seconds();   // KOKKOS RUNTIME
+    kokkos_elapsed_time = kokkos_timer.seconds();  // KOKKOS RUNTIME
     if (am_root) {
       print_log_results(options.output_dir, kokkos_elapsed_time, pipeline_timer.get_elapsed());
     }
-  #else
+#else
     if (am_root) {
       print_log_results(options.output_dir, total_timer.get_elapsed(), pipeline_timer.get_elapsed());
     }
-  #endif
-     } // end application scope
+#endif
+  }  // end application scope
 
-  #ifdef ENABLE_KOKKOS
-    Kokkos::finalize();   // KOKKOS FINALIZE
-  #endif
+#ifdef ENABLE_KOKKOS
+  Kokkos::finalize();  // KOKKOS FINALIZE
+#endif
 
   BaseTimer finalize_timer("upcxx::finalize", nullptr);  // no PromiseReduce possible
   finalize_timer.start();
@@ -565,8 +563,9 @@ int main(int argc, char* argv[]) {
 
   total_timer.stop();
   if (am_root) {
-    cout << "Total time: " << fixed << setprecision(3) << total_timer.get_elapsed() << " s, run_pipeline: "
-         << pipeline_timer.get_elapsed() << " s (upcxx::finalize in " << finalize_timer.get_elapsed() << " s)" << endl;
+    cout << "Total time: " << fixed << setprecision(3) << total_timer.get_elapsed()
+         << " s, run_pipeline: " << pipeline_timer.get_elapsed() << " s (upcxx::finalize in " << finalize_timer.get_elapsed()
+         << " s)" << endl;
   }
 
   return 0;

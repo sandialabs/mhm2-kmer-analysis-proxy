@@ -329,7 +329,10 @@ FORCE_INLINE int64_t sse2neon_recast_f64_s64(double val)
 #define _sse2neon_return(ret) return ret
 #endif
 
-#define _sse2neon_init(...) {__VA_ARGS__}
+#define _sse2neon_init(...) \
+    {                       \
+        __VA_ARGS__         \
+    }
 
 /* Compiler barrier */
 #if defined(_MSC_VER) && !defined(__clang__)
@@ -2091,7 +2094,7 @@ FORCE_INLINE void _sse2neon_set_fpcr(uint64_t value)
 #if defined(_MSC_VER) && !defined(__clang__)
     _WriteStatusReg(ARM64_FPCR, value);
 #else
-    __asm__ __volatile__("msr FPCR, %0" ::"r"(value)); /* write */
+    __asm__ __volatile__("msr FPCR, %0" ::"r"(value));  /* write */
 #endif
 }
 
@@ -2716,7 +2719,7 @@ FORCE_INLINE void _sse2neon_mm_set_flush_zero_mode(unsigned int flag)
 #if SSE2NEON_ARCH_AARCH64
     _sse2neon_set_fpcr(r.value);
 #else
-    __asm__ __volatile__("vmsr FPSCR, %0" ::"r"(r)); /* write */
+    __asm__ __volatile__("vmsr FPSCR, %0" ::"r"(r));        /* write */
 #endif
 }
 
@@ -2844,7 +2847,7 @@ FORCE_INLINE __m128 _mm_setzero_ps(void)
         SSE2NEON_REQUIRE_CONST_RANGE(imm, 0, 255);                         \
         vreinterpret_m64_s16(                                              \
             vshuffle_s16(vreinterpret_s16_m64(a), vreinterpret_s16_m64(a), \
-                         ((imm) & 0x3), (((imm) >> 2) & 0x3),              \
+                         ((imm) &0x3), (((imm) >> 2) & 0x3),               \
                          (((imm) >> 4) & 0x3), (((imm) >> 6) & 0x3)));     \
     })
 #else
@@ -4544,8 +4547,8 @@ FORCE_INLINE __m64 _mm_cvttpd_pi32(__m128d a)
     double a0, a1;
     a0 = sse2neon_recast_u64_f64(vgetq_lane_u64(vreinterpretq_u64_m128d(a), 0));
     a1 = sse2neon_recast_u64_f64(vgetq_lane_u64(vreinterpretq_u64_m128d(a), 1));
-    int32_t ALIGN_STRUCT(16) data[2] = {_sse2neon_cvtd_s32(a0),
-                                        _sse2neon_cvtd_s32(a1)};
+    int32_t ALIGN_STRUCT(16)
+        data[2] = {_sse2neon_cvtd_s32(a0), _sse2neon_cvtd_s32(a1)};
     return vreinterpret_m64_s32(vld1_s32(data));
 #endif
 }
@@ -5576,14 +5579,14 @@ FORCE_INLINE __m128i _mm_setzero_si128(void)
         SSE2NEON_REQUIRE_CONST_RANGE(imm8, 0, 3);                   \
         vreinterpretq_m128d_s64(vshuffleq_s64(                      \
             vreinterpretq_s64_m128d(a), vreinterpretq_s64_m128d(b), \
-            (imm8) & 0x1, (((imm8) & 0x2) >> 1) + 2));              \
+            (imm8) &0x1, (((imm8) &0x2) >> 1) + 2));                \
     })
 #else
-#define _mm_shuffle_pd(a, b, imm8)                                        \
-    (SSE2NEON_REQUIRE_CONST_RANGE(imm8, 0, 3),                            \
-     _mm_castsi128_pd(_mm_set_epi64x(                                     \
-         vgetq_lane_s64(vreinterpretq_s64_m128d(b), ((imm8) & 0x2) >> 1), \
-         vgetq_lane_s64(vreinterpretq_s64_m128d(a), (imm8) & 0x1))))
+#define _mm_shuffle_pd(a, b, imm8)                                       \
+    (SSE2NEON_REQUIRE_CONST_RANGE(imm8, 0, 3),                           \
+     _mm_castsi128_pd(_mm_set_epi64x(                                    \
+         vgetq_lane_s64(vreinterpretq_s64_m128d(b), ((imm8) &0x2) >> 1), \
+         vgetq_lane_s64(vreinterpretq_s64_m128d(a), (imm8) &0x1))))
 #endif
 
 // FORCE_INLINE __m128i _mm_shufflehi_epi16(__m128i a, const int imm)
@@ -6620,20 +6623,20 @@ FORCE_INLINE __m64 _mm_abs_pi8(__m64 a)
 // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm_alignr_epi8
 // imm must be a compile-time constant in range [0, 255]
 #if defined(__GNUC__) && !defined(__clang__)
-#define _mm_alignr_epi8(a, b, imm)                                 \
-    __extension__({                                                \
-        SSE2NEON_REQUIRE_CONST_RANGE(imm, 0, 255);                 \
-        uint8x16_t _a = vreinterpretq_u8_m128i(a);                 \
-        uint8x16_t _b = vreinterpretq_u8_m128i(b);                 \
-        __m128i ret;                                               \
-        if (_sse2neon_unlikely((imm) & ~31))                       \
-            ret = vreinterpretq_m128i_u8(vdupq_n_u8(0));           \
-        else if ((imm) >= 16)                                      \
-            ret = _mm_srli_si128(a, (imm) >= 16 ? (imm) - 16 : 0); \
-        else                                                       \
-            ret = vreinterpretq_m128i_u8(                          \
-                vextq_u8(_b, _a, (imm) < 16 ? (imm) : 0));         \
-        ret;                                                       \
+#define _mm_alignr_epi8(a, b, imm)                                \
+    __extension__({                                               \
+        SSE2NEON_REQUIRE_CONST_RANGE(imm, 0, 255);                \
+        uint8x16_t _a = vreinterpretq_u8_m128i(a);                \
+        uint8x16_t _b = vreinterpretq_u8_m128i(b);                \
+        __m128i ret;                                              \
+        if (_sse2neon_unlikely((imm) & ~31))                      \
+            ret = vreinterpretq_m128i_u8(vdupq_n_u8(0));          \
+        else if ((imm) >= 16)                                     \
+            ret = _mm_srli_si128(a, (imm) >= 16 ? (imm) -16 : 0); \
+        else                                                      \
+            ret = vreinterpretq_m128i_u8(                         \
+                vextq_u8(_b, _a, (imm) < 16 ? (imm) : 0));        \
+        ret;                                                      \
     })
 
 #else
@@ -6645,7 +6648,7 @@ FORCE_INLINE __m64 _mm_abs_pi8(__m64 a)
         if (_sse2neon_unlikely((imm) & ~31)) ret =                \
             vreinterpretq_m128i_u8(vdupq_n_u8(0));                \
         else if ((imm) >= 16) ret =                               \
-            _mm_srli_si128(_a, (imm) >= 16 ? (imm) - 16 : 0);     \
+            _mm_srli_si128(_a, (imm) >= 16 ? (imm) -16 : 0);      \
         else ret = vreinterpretq_m128i_u8(                        \
             vextq_u8(__b, __a, (imm) < 16 ? (imm) : 0));          \
         _sse2neon_return(ret);)
@@ -6665,7 +6668,7 @@ FORCE_INLINE __m64 _mm_abs_pi8(__m64 a)
             uint8x8_t tmp_low;                                              \
             uint8x8_t tmp_high;                                             \
             if ((imm) >= 8) {                                               \
-                const int idx = (imm) - 8;                                  \
+                const int idx = (imm) -8;                                   \
                 tmp_low = vreinterpret_u8_m64(_a);                          \
                 tmp_high = vdup_n_u8(0);                                    \
                 ret = vreinterpret_m64_u8(vext_u8(tmp_low, tmp_high, idx)); \
@@ -9086,7 +9089,8 @@ FORCE_INLINE uint16_t _sse2neon_sido_negative(int res,
         break;
     }
 
-    return _sse2neon_static_cast(uint16_t, res &((bound == 8) ? 0xFF : 0xFFFF));
+    return _sse2neon_static_cast(uint16_t,
+                                 res & ((bound == 8) ? 0xFF : 0xFFFF));
 }
 
 FORCE_INLINE int _sse2neon_clz(unsigned int x)
@@ -9135,7 +9139,7 @@ FORCE_INLINE int _sse2neon_ctzll(unsigned long long x)
 #define SSE2NEON_MIN(x, y) (x) < (y) ? (x) : (y)
 
 #define SSE2NEON_CMPSTR_SET_UPPER(var, imm) \
-    const int var = ((imm) & 0x01) ? 8 : 16
+    const int var = ((imm) &0x01) ? 8 : 16
 
 #define SSE2NEON_CMPESTRX_LEN_PAIR(a, b, la, lb) \
     int tmp1 = la ^ (la >> 31);                  \
@@ -9150,20 +9154,20 @@ FORCE_INLINE int _sse2neon_ctzll(unsigned long long x)
 // As the only difference of PCMPESTR* and PCMPISTR* is the way to calculate the
 // length of string, we use SSE2NEON_CMP{I,E}STRX_GET_LEN to get the length of
 // string a and b.
-#define SSE2NEON_COMP_AGG(a, b, la, lb, imm8, IE)                         \
-    SSE2NEON_CMPSTR_SET_UPPER(bound, imm8);                               \
-    SSE2NEON_##IE##_LEN_PAIR(a, b, la, lb);                               \
-    uint16_t r2 = (_sse2neon_cmpfunc_table[(imm8) & 0x0f])(a, la, b, lb); \
+#define SSE2NEON_COMP_AGG(a, b, la, lb, imm8, IE)                        \
+    SSE2NEON_CMPSTR_SET_UPPER(bound, imm8);                              \
+    SSE2NEON_##IE##_LEN_PAIR(a, b, la, lb);                              \
+    uint16_t r2 = (_sse2neon_cmpfunc_table[(imm8) &0x0f])(a, la, b, lb); \
     r2 = _sse2neon_sido_negative(r2, lb, imm8, bound)
 
-#define SSE2NEON_CMPSTR_GENERATE_INDEX(r2, bound, imm8)            \
-    return (r2 == 0) ? bound                                       \
-                     : (((imm8) & 0x40) ? (31 - _sse2neon_clz(r2)) \
-                                        : _sse2neon_ctz(r2))
+#define SSE2NEON_CMPSTR_GENERATE_INDEX(r2, bound, imm8)           \
+    return (r2 == 0) ? bound                                      \
+                     : (((imm8) &0x40) ? (31 - _sse2neon_clz(r2)) \
+                                       : _sse2neon_ctz(r2))
 
 #define SSE2NEON_CMPSTR_GENERATE_MASK(dst)                                     \
     __m128i dst = vreinterpretq_m128i_u8(vdupq_n_u8(0));                       \
-    if ((imm8) & 0x40) {                                                       \
+    if ((imm8) &0x40) {                                                        \
         if (bound == 8) {                                                      \
             uint16x8_t tmp = vtstq_u16(vdupq_n_u16(r2),                        \
                                        vld1q_u16(_sse2neon_cmpestr_mask16b));  \
@@ -9290,7 +9294,7 @@ FORCE_INLINE int _mm_cmpestrz(__m128i a,
 
 #define SSE2NEON_CMPISTRX_LENGTH(str, len, imm8)                         \
     do {                                                                 \
-        if ((imm8) & 0x01) {                                             \
+        if ((imm8) &0x01) {                                              \
             uint16x8_t equal_mask_##str =                                \
                 vceqq_u16(vreinterpretq_u16_m128i(str), vdupq_n_u16(0)); \
             uint8x8_t res_##str = vshrn_n_u16(equal_mask_##str, 4);      \
@@ -10412,7 +10416,7 @@ FORCE_INLINE void _sse2neon_mm_set_denormals_zero_mode(unsigned int flag)
 #if SSE2NEON_ARCH_AARCH64
     _sse2neon_set_fpcr(r.value);
 #else
-    __asm__ __volatile__("vmsr FPSCR, %0" ::"r"(r)); /* write */
+    __asm__ __volatile__("vmsr FPSCR, %0" ::"r"(r));        /* write */
 #endif
 }
 

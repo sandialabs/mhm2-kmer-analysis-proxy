@@ -145,9 +145,9 @@ void analyze_kmers(unsigned kmer_len, int qual_offset, PackedReadsList &packed_r
   BarrierTimer timer(__FILEFUNC__);
   _dmin_thres = dmin_thres;
   // size_t max_ctgs = upcxx::reduce_all(ctgs.size(), upcxx::op_fast_max).wait();
-  //SLOG("analyze_kmers: ... BEFORE ...  count_kmers\n");	//DEBUG
+  // SLOG("analyze_kmers: ... BEFORE ...  count_kmers\n");	//DEBUG
   count_kmers(kmer_len, qual_offset, packed_reads_list, kmer_dht);
-  //SLOG("analyze_kmers: ...  AFTER ... count_kmers\n");	// DEBUG
+  // SLOG("analyze_kmers: ...  AFTER ... count_kmers\n");	// DEBUG
   barrier();
   // if (max_ctgs) {
   //   add_ctg_kmers(kmer_len, prev_kmer_len, ctgs, kmer_dht);
