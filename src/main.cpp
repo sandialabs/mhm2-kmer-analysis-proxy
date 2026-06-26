@@ -349,7 +349,7 @@ string init_upcxx(BaseTimer &total_timer) {
   return fut_report_init_timings.wait();
 }
 
-void print_log_results(string output_dir, double elapsed_time) {
+void print_log_results(string output_dir, double elapsed_time, double pipeline_elapsed_time) {
   // parse proxy results from log file and print
 
   ifstream log_file("mhm2.log");
@@ -394,11 +394,11 @@ void print_log_results(string output_dir, double elapsed_time) {
   ofstream csv("proxy_results_summary.csv");
 
   // column headers
-  csv << "Reads,Unique kmers,Total kmers,Fraction of Unique Kmers,Peak Memory (GB),Timing (seconds)\n";
+  csv << "Reads,Unique kmers,Total kmers,Fraction of Unique Kmers,Peak Memory (GB),Timing (seconds),Pipeline timing (seconds)\n";
 
   // results
   csv << read_count << "," << unique_kmers << "," << total_kmers << "," << std::fixed << std::setprecision(3) << frac << ","
-      << std::setprecision(2) << mem << "," << elapsed_time << "\n";
+      << std::setprecision(2) << mem << "," << elapsed_time << "," << pipeline_elapsed_time << "\n";
 
   csv.close();
 }
@@ -455,6 +455,8 @@ int main(int argc, char* argv[]) {
   Kokkos::Timer kokkos_timer;
 #endif
 
+  BaseTimer pipeline_timer("run_pipeline", nullptr);  // no PromiseReduce possible
+
   // Scope application objects so they are destroyed before finalizing
   // Kokkos and UPC++.
   {
@@ -506,7 +508,9 @@ int main(int argc, char* argv[]) {
 
     MemoryTrackerThread memory_tracker;  // write only to mhm2.log file(s), not a separate one too
 
+    pipeline_timer.start();
     run_pipeline(options, memory_tracker, start_t);
+    pipeline_timer.stop();
 
     LOG("Cleaning up and completing remaining tasks\n");
 
@@ -541,11 +545,11 @@ int main(int argc, char* argv[]) {
     Kokkos::fence();
     kokkos_elapsed_time = kokkos_timer.seconds();   // KOKKOS RUNTIME
     if (am_root) {
-      print_log_results(options.output_dir, kokkos_elapsed_time);
+      print_log_results(options.output_dir, kokkos_elapsed_time, pipeline_timer.get_elapsed());
     }
   #else
     if (am_root) {
-      print_log_results(options.output_dir, total_timer.get_elapsed());
+      print_log_results(options.output_dir, total_timer.get_elapsed(), pipeline_timer.get_elapsed());
     }
   #endif
      } // end application scope
@@ -561,8 +565,8 @@ int main(int argc, char* argv[]) {
 
   total_timer.stop();
   if (am_root) {
-    cout << "Total time: " << fixed << setprecision(3) << total_timer.get_elapsed() << " s (upcxx::finalize in "
-         << finalize_timer.get_elapsed() << " s)" << endl;
+    cout << "Total time: " << fixed << setprecision(3) << total_timer.get_elapsed() << " s, run_pipeline: "
+         << pipeline_timer.get_elapsed() << " s (upcxx::finalize in " << finalize_timer.get_elapsed() << " s)" << endl;
   }
 
   return 0;

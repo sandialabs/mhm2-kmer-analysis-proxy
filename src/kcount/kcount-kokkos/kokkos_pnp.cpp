@@ -358,6 +358,8 @@ kcount_gpu::ParseAndPackGPUDriver::ParseAndPackGPUDriver(int upcxx_rank_me, int 
     h_mask_v(i) = KOKKOS_0_MASK[i];
   }
   Kokkos::deep_copy(mask_v, h_mask_v);
+
+  // total storage required is approx KCOUNT_SEQ_BLOCK_SIZE * (1 + num_kmers_longs * sizeof(uint64_t) + sizeof(int) + 1)
 }
 
 kcount_gpu::ParseAndPackGPUDriver::~ParseAndPackGPUDriver() {}
