@@ -2,4 +2,6 @@
 
 #include "@TEMPLATE@.cpp"
 
-__MACRO_ @TEMPLATE_UPPER @__(@KMER_LENGTH @, template);
+// clang-format off
+__MACRO_@TEMPLATE_UPPER@__(@KMER_LENGTH@, template);
+// clang-format on
