@@ -81,7 +81,7 @@ struct SupermerBuff {
   // char *seqs;
   // count_t *counts;
   Kokkos::View<char *> seqs_v;
-  Kokkos::View<char *>::host_mirror_type h_seqs_v;
+  Kokkos::View<char *, Kokkos::HostSpace> h_seqs_v;
 
   Kokkos::View<count_t *> counts_v;
   Kokkos::View<count_t *>::host_mirror_type h_counts_v;

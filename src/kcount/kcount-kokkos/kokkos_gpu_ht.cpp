@@ -736,7 +736,7 @@ void HashTableGPUDriver<MAX_K>::init(int upcxx_rank_me, int upcxx_rank_n, int km
   unpacked_elem_buff_dev.counts_v = Kokkos::View<count_t *>();
 
   // For transferring packed elements from host to gpu
-  elem_buff_host.h_seqs_v = Kokkos::create_mirror_view(packed_elem_buff_dev.seqs_v);
+  elem_buff_host.h_seqs_v = Kokkos::View<char *, Kokkos::HostSpace>("elem_buff_host_seqs", KCOUNT_GPU_HASHTABLE_BLOCK_SIZE);
   // These are not used for kmers from reads
   elem_buff_host.h_counts_v = Kokkos::create_mirror_view(packed_elem_buff_dev.counts_v);
 
@@ -850,6 +850,7 @@ void HashTableGPUDriver<MAX_K>::done_all_inserts(uint64_t &num_dropped, uint64_t
   packed_elem_buff_dev.counts_v = Kokkos::View<count_t *>();
   unpacked_elem_buff_dev.seqs_v = Kokkos::View<char *>();
   unpacked_elem_buff_dev.counts_v = Kokkos::View<count_t *>();
+  const uint64_t populated_entries = num_entries;
   // overallocate to reduce collisions
   num_entries *= 1.3;
   num_entries += 4000;
@@ -862,18 +863,18 @@ void HashTableGPUDriver<MAX_K>::done_all_inserts(uint64_t &num_dropped, uint64_t
   read_kmers_dev.clear();
 
 #ifdef DEBUG
-  if (num_unique != read_kmers_dev.num) WARN("mismatch in expected entries %lu != %lu", num_unique, read_kmers_dev.num);
+  if (num_unique != populated_entries) WARN("mismatch in expected entries %lu != %lu", num_unique, populated_entries);
 #endif
-  // now copy the gpu hash table values across to the host
-  // We only do this once, which requires enough memory on the host to store the full GPU hash table, but since the GPU memory
-  // is generally a lot less than the host memory, it should be fine.
-
-  output_keys_v = Kokkos::create_mirror_view(compact_read_kmers_dev.keys_v);
-  output_vals_v = Kokkos::create_mirror_view(compact_read_kmers_dev.vals_v);
+  // Copy the full compact hash table to host; entries are stored at hash slots, not densely packed.
+  const size_t compact_capacity = static_cast<size_t>(compact_read_kmers_dev.capacity);
+  output_keys_v = typename Kokkos::View<KmerArray<MAX_K> *>::host_mirror_type("output_keys", compact_capacity);
+  output_vals_v = typename Kokkos::View<CountExts *>::host_mirror_type("output_vals", compact_capacity);
   begin_iterate();
 
-  Kokkos::deep_copy(output_keys_v, compact_read_kmers_dev.keys_v);
-  Kokkos::deep_copy(output_vals_v, compact_read_kmers_dev.vals_v);
+  if (compact_capacity > 0) {
+    Kokkos::deep_copy(output_keys_v, compact_read_kmers_dev.keys_v);
+    Kokkos::deep_copy(output_vals_v, compact_read_kmers_dev.vals_v);
+  }
   compact_read_kmers_dev.clear();
 }
 

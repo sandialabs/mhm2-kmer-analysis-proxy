@@ -42,6 +42,7 @@ export INPUT_SIZE="small"
 export KOKKOS_USE="${KOKKOS_USE:=KOKKOS_ON}"
 export BACKEND="${BACKEND:=HIP}"
 export NUM_RANKS=${NUM_RANKS:=2}
+export NUM_RUNS=${NUM_RUNS:=3}
 
 RUN_TS=$(date +"%Y%m%d_%H%M%S")
 RUN_HASH=$(printf '%s' "${RUN_TS}" | md5sum | awk '{print substr($1, 1, 8)}')
@@ -50,6 +51,7 @@ export CSV_DIR="${RESULTS_DIR}/csv"
 mkdir -p "${RESULTS_DIR}" "${CSV_DIR}"
 echo "Results batch: ${RESULTS_DIR}"
 echo "CSV output:    ${CSV_DIR}"
+echo "Runs per rank: ${NUM_RUNS}"
 echo
 
 _run_proxy() {
@@ -58,8 +60,8 @@ _run_proxy() {
   export KOKKOS_USE=${kokkos_use}
   local install_dir="${ROOT}/install_${BACKEND}_${KOKKOS_USE}"
   local mhm2_bin="${install_dir}/bin/mhm2"
-  export PROXY_OUTPUT="${RESULTS_DIR}/${KOKKOS_USE}_${BACKEND}_ranks_${NUM_RANKS}"
-  mkdir -p "${PROXY_OUTPUT}"
+  local rank_output="${RESULTS_DIR}/${KOKKOS_USE}_${BACKEND}_ranks_${NUM_RANKS}"
+  mkdir -p "${rank_output}"
 
   if [ ! -x "${mhm2_bin}" ]; then
     echo "Missing executable: ${mhm2_bin}" >&2
@@ -67,23 +69,33 @@ _run_proxy() {
     exit 1
   fi
 
-  upcxx-run \
-  -n ${NUM_RANKS} \
-  -shared-heap "250MB" \
-  -network=ofi \
-  "${mhm2_bin}" \
-  --pin=none \
-  --paired-reads \
-  ${DATA_SMALL}/36_S23_R1_001_trim2mil.fastq \
-  ${DATA_SMALL}/36_S23_R2_001_trim2mil.fastq \
-  --output "${PROXY_OUTPUT}"
+  for run_idx in $(seq 1 "${NUM_RUNS}"); do
+    local run_label
+    run_label=$(printf "run_%02d" "${run_idx}")
+    export PROXY_OUTPUT="${rank_output}/${run_label}"
+    mkdir -p "${PROXY_OUTPUT}"
 
-  shopt -s nullglob
-  for csv_file in "${ROOT}"/*.csv; do
-    base=$(basename "${csv_file}" .csv)
-    cp "${csv_file}" "${CSV_DIR}/${base}_ranks_${NUM_RANKS}.csv"
+    echo "--- ${KOKKOS_USE} ${BACKEND} ranks=${NUM_RANKS} ${run_label} ---"
+
+    upcxx-run \
+    -n ${NUM_RANKS} \
+    -shared-heap "250MB" \
+    -network=ofi \
+    "${mhm2_bin}" \
+    --pin=none \
+    --paired-reads \
+    ${DATA_SMALL}/36_S23_R1_001_trim2mil.fastq \
+    ${DATA_SMALL}/36_S23_R2_001_trim2mil.fastq \
+    --output "${PROXY_OUTPUT}"
+
+    shopt -s nullglob
+    for csv_file in "${ROOT}"/*.csv; do
+      base=$(basename "${csv_file}" .csv)
+      cp "${csv_file}" "${CSV_DIR}/${base}_ranks_${NUM_RANKS}_${run_label}.csv"
+      rm -f "${csv_file}"
+    done
+    shopt -u nullglob
   done
-  shopt -u nullglob
 }
 
 run_proxy_kokkos_off() {

@@ -114,7 +114,6 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
   bool from_ctgs = !state->depth_block.empty();
   state->num_block_calls++;
 
-// NO KOKKOS
 #ifndef ENABLE_KOKKOS
   future<bool> fut = execute_in_thread_pool(
       [&state, &num_valid_kmers] { return state->pnp_gpu_driver->process_seq_block(state->seq_block, num_valid_kmers); });
@@ -131,38 +130,32 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
     progress();
   }
   fut_pnp.wait();
+#else
+  if (!state->pnp_gpu_driver->process_seq_block(state->seq_block, num_valid_kmers))
+    DIE("seq length is too high, ", state->seq_block.length(), " >= ", KCOUNT_SEQ_BLOCK_SIZE);
+  state->bytes_kmers_sent += sizeof(KmerAndExt<MAX_K>) * num_valid_kmers;
+  state->pnp_gpu_driver->pack_seq_block(state->seq_block);
+#endif
+
   int num_targets = (int)state->pnp_gpu_driver->supermers.size();
   for (int i = 0; i < num_targets; i++) {
     auto target = state->pnp_gpu_driver->supermers[i].target;
     auto offset = state->pnp_gpu_driver->supermers[i].offset;
     auto len = state->pnp_gpu_driver->supermers[i].len;
-#endif
 
-// KOKKOS
-#ifdef ENABLE_KOKKOS
-    state->pnp_gpu_driver->process_seq_block(state->seq_block, num_valid_kmers);
-    state->bytes_kmers_sent += sizeof(KmerAndExt<MAX_K>) * num_valid_kmers;
-    state->pnp_gpu_driver->pack_seq_block(state->seq_block);
-    int num_targets = (int)state->pnp_gpu_driver->h_num_supermers_v();
-    for (int i = 0; i < num_targets; i++) {
-      auto target = state->pnp_gpu_driver->h_supermers_v(i).target;
-      auto offset = state->pnp_gpu_driver->h_supermers_v(i).offset;
-      auto len = state->pnp_gpu_driver->h_supermers_v(i).len;
-#endif
-
-      Supermer supermer;
-      int packed_len = len / 2;
-      if (offset % 2 || len % 2) packed_len++;
-      supermer.seq = state->pnp_gpu_driver->packed_seqs.substr(offset / 2, packed_len);
-      if (offset % 2) supermer.seq[0] &= 15;
-      if ((offset + len) % 2) supermer.seq[supermer.seq.length() - 1] &= 240;
-      supermer.count = (from_ctgs ? state->depth_block[offset + 1] : (kmer_count_t)1);
-      state->bytes_supermers_sent += supermer.get_bytes();
-      kmer_dht->add_supermer(supermer, target);
-      state->num_kmers += (2 * supermer.seq.length() - Kmer<MAX_K>::get_k());
-      progress();
-    }
+    Supermer supermer;
+    int packed_len = len / 2;
+    if (offset % 2 || len % 2) packed_len++;
+    supermer.seq = state->pnp_gpu_driver->packed_seqs.substr(offset / 2, packed_len);
+    if (offset % 2) supermer.seq[0] &= 15;
+    if ((offset + len) % 2) supermer.seq[supermer.seq.length() - 1] &= 240;
+    supermer.count = (from_ctgs ? state->depth_block[offset + 1] : (kmer_count_t)1);
+    state->bytes_supermers_sent += supermer.get_bytes();
+    kmer_dht->add_supermer(supermer, target);
+    state->num_kmers += (2 * supermer.seq.length() - Kmer<MAX_K>::get_k());
+    progress();
   }
+}
 
   template <int MAX_K>
   void SeqBlockInserter<MAX_K>::process_seq(string & seq, kmer_count_t depth, dist_object<KmerDHT<MAX_K>> & kmer_dht) {
