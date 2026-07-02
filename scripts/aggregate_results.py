@@ -51,6 +51,14 @@ def parse_args() -> argparse.Namespace:
         help="Only include runs for this Kokkos configuration",
     )
     parser.add_argument(
+        "--compare",
+        action="store_true",
+        help=(
+            "Compare KOKKOS_ON and KOKKOS_OFF side by side, loading the latest "
+            "results batch for each configuration under <root>/results/"
+        ),
+    )
+    parser.add_argument(
         "--backend",
         default=None,
         help="Only include runs for this backend (e.g. HIP), matched from directory names",
@@ -249,6 +257,82 @@ def iter_output_dirs(root: Path) -> List[Path]:
     return output_dirs
 
 
+def batch_has_kokkos_config(
+    batch_dir: Path,
+    kokkos_use: str,
+    backend: Optional[str] = None,
+) -> bool:
+    for output_dir in batch_dir.iterdir():
+        if not output_dir.is_dir():
+            continue
+
+        match = OUTPUT_DIR_PATTERN.match(output_dir.name)
+        if not match:
+            continue
+
+        run_kokkos, run_backend, _ = match.groups()
+        if normalize_kokkos_use(run_kokkos) != normalize_kokkos_use(kokkos_use):
+            continue
+        if backend and run_backend != backend:
+            continue
+        return True
+
+    return False
+
+
+def load_batch_data(
+    batch_dir: Path,
+    root: Path,
+    kokkos_use: Optional[str] = None,
+    backend: Optional[str] = None,
+) -> pd.DataFrame:
+    merge_csv_files(batch_dir, root, kokkos_use, backend)
+
+    data = load_results_from_csv_dir(batch_dir / "csv")
+    if data.empty:
+        return data
+
+    if kokkos_use and "kokkos_use" in data.columns:
+        data = data[data["kokkos_use"] == normalize_kokkos_use(kokkos_use)]
+    if backend and "backend" in data.columns:
+        data = data[data["backend"] == backend]
+
+    sort_cols = ["ranks", "run"] if "run" in data.columns else ["ranks"]
+    return data.sort_values(sort_cols).reset_index(drop=True)
+
+
+def load_compare_results(root: Path, backend: Optional[str] = None) -> pd.DataFrame:
+    results_root = root / "results"
+    if not results_root.is_dir():
+        return pd.DataFrame()
+
+    batch_dirs = sorted(
+        (p for p in results_root.iterdir() if p.is_dir()),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+
+    frames: List[pd.DataFrame] = []
+    for kokkos in KOKKOS_HUE_ORDER:
+        for batch_dir in batch_dirs:
+            if not batch_has_kokkos_config(batch_dir, kokkos, backend):
+                continue
+
+            frame = load_batch_data(batch_dir, root, kokkos, backend)
+            if frame.empty:
+                continue
+
+            frames.append(frame)
+            break
+
+    if not frames:
+        return pd.DataFrame()
+
+    result = pd.concat(frames, ignore_index=True)
+    sort_cols = ["ranks", "kokkos_use", "run"] if "run" in result.columns else ["ranks", "kokkos_use"]
+    return result.sort_values(sort_cols).reset_index(drop=True)
+
+
 def load_results(
     root: Path,
     batch_dir: Optional[Path],
@@ -323,6 +407,11 @@ PIPELINE_COLOR = "#4477AA"
 MEMORY_COLOR = "#EE7733"
 PIPELINE_ERR_COLOR = "#336699"
 MEMORY_ERR_COLOR = "#D97706"
+KOKKOS_COLORS = {
+    "KOKKOS_ON": "#4477AA",
+    "KOKKOS_OFF": "#CC6677",
+}
+KOKKOS_HUE_ORDER = ("KOKKOS_OFF", "KOKKOS_ON")
 ERRORBAR_LINEWIDTH = 1.8
 ERRORBAR_CAPSIZE = 0.16
 ERRORBAR_CAPTHICK = 1.8
@@ -405,6 +494,68 @@ def plot_results(data: pd.DataFrame, title: str, output: Optional[Path], show: b
         plt.close(fig)
 
 
+def plot_compare_results(
+    data: pd.DataFrame,
+    title: str,
+    output: Optional[Path],
+    show: bool,
+) -> None:
+    pipeline_col = "Pipeline timing (seconds)"
+
+    if pipeline_col not in data.columns:
+        sys.exit(f"Missing column '{pipeline_col}' in aggregated results.")
+
+    if "kokkos_use" not in data.columns:
+        sys.exit("Compare chart requires a 'kokkos_use' column in aggregated results.")
+
+    plot_data = data.copy()
+    plot_data["kokkos_use"] = plot_data["kokkos_use"].map(normalize_kokkos_use)
+    plot_data["rank_label"] = plot_data["ranks"].astype(str)
+    use_error_bars = "run" in plot_data.columns and plot_data.groupby(["ranks", "kokkos_use"])["run"].nunique().max() > 1
+
+    sns.set_theme(style="ticks", context="talk", palette="colorblind")
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    sns.barplot(
+        data=plot_data,
+        x="rank_label",
+        y=pipeline_col,
+        hue="kokkos_use",
+        hue_order=KOKKOS_HUE_ORDER,
+        palette=KOKKOS_COLORS,
+        edgecolor="white",
+        linewidth=0.8,
+        errorbar="sd" if use_error_bars else None,
+        capsize=ERRORBAR_CAPSIZE if use_error_bars else 0,
+        err_kws={"linewidth": ERRORBAR_LINEWIDTH},
+        ax=ax,
+    )
+    ax.set_xlabel("Number of ranks")
+    ax.set_ylabel("Pipeline timing (seconds)")
+    ax.set_title(title)
+    ax.set_axisbelow(True)
+    ax.grid(
+        axis="y",
+        color="#D0D0D0",
+        linewidth=0.5,
+        linestyle="-",
+        zorder=0,
+    )
+    sns.despine(ax=ax)
+
+    fig.tight_layout()
+
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(output, dpi=150, bbox_inches="tight")
+        print(f"Wrote chart to {output}")
+
+    if show or not output:
+        plt.show()
+    else:
+        plt.close(fig)
+
+
 def main() -> None:
     args = parse_args()
     root = args.root.resolve()
@@ -412,24 +563,67 @@ def main() -> None:
     if not root.is_dir():
         sys.exit(f"Repository root not found: {root}")
 
-    data = load_results(root, args.batch_dir, args.kokkos_use, args.backend)
-    if data.empty:
-        sys.exit(
-            f"No {SUMMARY_CSV_NAME} files found in KOKKOS_* directories under "
-            f"{resolve_batch_dir(root, args.batch_dir)}"
-        )
+    if args.compare and args.kokkos_use:
+        sys.exit("Use either --compare or --kokkos-use, not both.")
 
-    title = build_chart_title(data, args.kokkos_use, args.backend)
+    if args.compare:
+        data = load_compare_results(root, args.backend)
+        if data.empty:
+            sys.exit(
+                f"No {SUMMARY_CSV_NAME} files found for both KOKKOS_ON and KOKKOS_OFF "
+                f"under {root / 'results'}"
+            )
+        title = build_chart_title(data, backend=args.backend)
+        if "kokkos_use" in data.columns and data["kokkos_use"].nunique() > 1:
+            title = title.replace(
+                "mhm2 kmer analysis proxy",
+                "mhm2 kmer analysis proxy (KOKKOS_ON vs KOKKOS_OFF)",
+                1,
+            )
+    else:
+        data = load_results(root, args.batch_dir, args.kokkos_use, args.backend)
+        if data.empty:
+            sys.exit(
+                f"No {SUMMARY_CSV_NAME} files found in KOKKOS_* directories under "
+                f"{resolve_batch_dir(root, args.batch_dir)}"
+            )
+        title = build_chart_title(data, args.kokkos_use, args.backend)
 
     pipeline_col = "Pipeline timing (seconds)"
     memory_col = "Peak Memory (GB)"
-    if "run" in data.columns and data.groupby("ranks")["run"].nunique().max() > 1:
-        summary = summarize_by_rank(data, pipeline_col, memory_col)
-        print(summary.to_string(index=False))
-    else:
-        print(data[["output_dir", "ranks", pipeline_col, memory_col]].to_string(index=False))
+    if args.compare or (
+        "kokkos_use" in data.columns and data["kokkos_use"].nunique() > 1
+    ):
+        if "run" in data.columns and data.groupby(["ranks", "kokkos_use"])["run"].nunique().max() > 1:
+            summary = (
+                data.groupby(["ranks", "kokkos_use"], as_index=False)
+                .agg(
+                    **{
+                        pipeline_col: (pipeline_col, "mean"),
+                        f"{pipeline_col} std": (pipeline_col, "std"),
+                        memory_col: (memory_col, "mean"),
+                        f"{memory_col} std": (memory_col, "std"),
+                        "runs": ("run", "count"),
+                    }
+                )
+                .sort_values(["ranks", "kokkos_use"])
+                .reset_index(drop=True)
+            )
+            print(summary.to_string(index=False))
+        else:
+            cols = ["kokkos_use", "output_dir", "ranks", pipeline_col, memory_col]
+            cols = [col for col in cols if col in data.columns]
+            print(data[cols].to_string(index=False))
 
-    plot_results(data, title, args.output, args.show)
+        plot_compare_results(data, title, args.output, args.show)
+    else:
+        if "run" in data.columns and data.groupby("ranks")["run"].nunique().max() > 1:
+            summary = summarize_by_rank(data, pipeline_col, memory_col)
+            print(summary.to_string(index=False))
+        else:
+            print(data[["output_dir", "ranks", pipeline_col, memory_col]].to_string(index=False))
+
+        plot_results(data, title, args.output, args.show)
 
 
 if __name__ == "__main__":
