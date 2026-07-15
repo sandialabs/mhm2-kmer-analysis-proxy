@@ -46,7 +46,7 @@ LinearAllocatorPool::LinearAllocatorPool(const std::size_t block_size, const std
 
 LinearAllocatorPool::~LinearAllocatorPool() { FreeBlocks(); }
 
-const std::size_t LinearAllocatorPool::CalculatePadding(const std::size_t baseAddress, const std::size_t alignment) {
+std::size_t LinearAllocatorPool::CalculatePadding(const std::size_t baseAddress, const std::size_t alignment) {
   const std::size_t multiplier = (baseAddress / alignment) + 1;
   const std::size_t alignedAddress = multiplier * alignment;
   const std::size_t padding = alignedAddress - baseAddress;

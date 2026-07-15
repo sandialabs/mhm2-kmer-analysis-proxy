@@ -56,7 +56,6 @@ static void count_kmers(unsigned kmer_len, int qual_offset, PackedReadsList &pac
                         dist_object<KmerDHT<MAX_K>> &kmer_dht) {
   BarrierTimer timer(__FILEFUNC__);
   int64_t num_reads = 0;
-  int64_t num_lines = 0;
   int64_t num_bad_quals = 0;
   int64_t tot_read_len = 0;
 

@@ -161,8 +161,6 @@ KOKKOS_FUNCTION bool ext_conflict(ext_count_t *ext_counts, int start_idx) {
 template <int MAX_K>
 void gpu_compact_ht(KmerCountsMap<MAX_K> elems, KmerExtsMap<MAX_K> compact_elems, uint64_t &num_purged, uint64_t &num_entries) {
   const int N_LONGS = KmerArray<MAX_K>::N_LONGS;
-  uint64_t dropped_inserts = 0;
-  uint64_t unique_inserts = 0;
   const uint64_t KEY_EMPTY = 0xffffffffffffffff;
 
   Kokkos::View<KmerArray<MAX_K> *> keys_view = elems.keys_v;
@@ -850,7 +848,7 @@ void HashTableGPUDriver<MAX_K>::done_all_inserts(uint64_t &num_dropped, uint64_t
   packed_elem_buff_dev.counts_v = Kokkos::View<count_t *>();
   unpacked_elem_buff_dev.seqs_v = Kokkos::View<char *>();
   unpacked_elem_buff_dev.counts_v = Kokkos::View<count_t *>();
-  const uint64_t populated_entries = num_entries;
+  [[maybe_unused]] const uint64_t populated_entries = num_entries;
   // overallocate to reduce collisions
   num_entries *= 1.3;
   num_entries += 4000;

@@ -52,7 +52,7 @@ class LinearAllocatorPool {
 
   ~LinearAllocatorPool();
 
-  static const std::size_t CalculatePadding(const std::size_t baseAddress, const std::size_t alignment);
+  static std::size_t CalculatePadding(const std::size_t baseAddress, const std::size_t alignment);
 
   void *Allocate(const std::size_t size, const std::size_t alignment = 0);
 

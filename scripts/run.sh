@@ -17,7 +17,7 @@ export GASNET_BACKTRACE=1
 
 export DATE=$(date +"%Y-%m-%d")
 
-export PROJECT_ROOT="${PROJECT_ROOT:=/projects/proxy_apps}"
+export PROJECT_ROOT="${PROJECT_ROOT:=/home/jciesko/RAndD/proxy-apps/}"
 
 export DATA_ROOT_COW=${PROJECT_ROOT}/assembler_input_datasets/gavin_lab_data/CowMetaGenome
 
@@ -40,9 +40,16 @@ export INPUT_SIZE="small"
 #export INPUT_SIZE="large"
 
 export KOKKOS_USE="${KOKKOS_USE:=KOKKOS_ON}"
-export BACKEND="${BACKEND:=HIP}"
+# GPU backend: CUDA (NVIDIA/H100) or HIP (AMD/MI300A). Selects the install dir
+# (install_${BACKEND}_${KOKKOS_USE}) and result labels.
+export BACKEND="${BACKEND:=CUDA}"
 export NUM_RANKS=${NUM_RANKS:=2}
 export NUM_RUNS=${NUM_RUNS:=3}
+
+# GASNet conduit to launch with. Must be one the UPC++ install was built with
+# (see: upcxx-meta GASNET_CONDUIT / the upcxx.opt.gasnet_*.<net> dirs). This
+# install provides smp/ibv/mpi/udp (default smp); "ofi" is NOT available.
+export RUN_NETWORK="${RUN_NETWORK:=smp}"
 
 RUN_TS=$(date +"%Y%m%d_%H%M%S")
 RUN_HASH=$(printf '%s' "${RUN_TS}" | md5sum | awk '{print substr($1, 1, 8)}')
@@ -80,7 +87,7 @@ _run_proxy() {
     upcxx-run \
     -n ${NUM_RANKS} \
     -shared-heap "250MB" \
-    -network=ofi \
+    -network="${RUN_NETWORK}" \
     "${mhm2_bin}" \
     --pin=none \
     --paired-reads \

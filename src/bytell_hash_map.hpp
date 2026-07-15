@@ -393,7 +393,10 @@ class sherwood_v8_table : private ByteAlloc, private Hasher, private Equal {
     ValueType &operator*() const { return current->data[index % BlockSize]; }
     ValueType *operator->() const { return current->data + index % BlockSize; }
 
-    operator templated_iterator<const value_type>() const { return {current, index}; }
+    template <typename T2 = ValueType, typename = typename std::enable_if<!std::is_const<T2>::value>::type>
+    operator templated_iterator<const value_type>() const {
+      return {current, index};
+    }
   };
   using iterator = templated_iterator<value_type>;
   using const_iterator = templated_iterator<const value_type>;
