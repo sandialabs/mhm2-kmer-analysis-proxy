@@ -109,12 +109,11 @@ def normalize_kokkos_use(value: str) -> str:
 def display_impl_label(kokkos_use: str, backend: Optional[str] = None) -> str:
     """Map internal KOKKOS_ON/OFF labels to chart legend names."""
     normalized = normalize_kokkos_use(kokkos_use)
+    backend_label = backend.upper() if backend else "NATIVE"
     if normalized == "KOKKOS_ON":
-        return "KOKKOS"
+        return f"KOKKOS::{backend_label}" if backend else "KOKKOS"
     if normalized == "KOKKOS_OFF":
-        if backend:
-            return backend.upper()
-        return "NATIVE"
+        return backend_label
     return normalized
 
 
@@ -421,11 +420,13 @@ PIPELINE_ERR_COLOR = "#1565C0"
 MEMORY_ERR_COLOR = "#E65100"
 # Display labels used in compare charts (after mapping from KOKKOS_ON/OFF).
 COMPARE_COLORS = {
+    "KOKKOS::CUDA": "#1E90FF",
+    "KOKKOS::HIP": "#1E90FF",
     "KOKKOS": "#1E90FF",
     "CUDA": "#FF4D6D",
     "HIP": "#FF4D6D",
 }
-COMPARE_HUE_ORDER = ("CUDA", "HIP", "KOKKOS")
+COMPARE_HUE_ORDER = ("CUDA", "HIP", "KOKKOS::CUDA", "KOKKOS::HIP", "KOKKOS")
 ERRORBAR_LINEWIDTH = 1.8
 ERRORBAR_CAPSIZE = 0.16
 ERRORBAR_CAPTHICK = 1.8
