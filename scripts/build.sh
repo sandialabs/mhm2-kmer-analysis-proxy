@@ -114,6 +114,25 @@ if [ -n "${CUDA_HOST_CXX}" ]; then
   echo "Host C++ compiler for OpenMPI/nvcc: ${CUDA_HOST_CXX} ($(${CUDA_HOST_CXX} -dumpfullversion 2>/dev/null || echo '?'))"
 fi
 
+# GASNet in this UPC++ install enables the MPI bootstrap even for the smp
+# conduit (GASNET_LD_REQUIRES_MPI=1; libgasnet-*-seq.a contains
+# gasnet_bootstrap_mpi). GASNet therefore expects the final link to go through
+# mpicc/mpicxx so -lmpi is pulled in. With CUDA separable compilation the link
+# often bypasses the MPI wrapper and fails with undefined references to
+# MPI_Finalized / MPI_Abort. Inject the wrapper's link flags explicitly.
+MPI_LINK_FLAGS="${MPI_LINK_FLAGS:-}"
+if [ -z "${MPI_LINK_FLAGS}" ]; then
+  if command -v mpicxx >/dev/null 2>&1; then
+    MPI_LINK_FLAGS="$(mpicxx --showme:link 2>/dev/null || true)"
+  elif command -v mpicc >/dev/null 2>&1; then
+    MPI_LINK_FLAGS="$(mpicc --showme:link 2>/dev/null || true)"
+  fi
+fi
+if [ -n "${MPI_LINK_FLAGS}" ]; then
+  echo "MPI link flags (GASNet bootstrap): ${MPI_LINK_FLAGS}"
+  export LDFLAGS="${MPI_LINK_FLAGS} ${LDFLAGS:-}"
+fi
+
 echo "####################################################################"
 echo "                     PROXY BUILDER                                  "
 echo "####################################################################"
@@ -160,6 +179,7 @@ if [ "${BUILD_CMD}" = "Debug" ] || [ "${BUILD_CMD}" = "Release" ] || [ "${BUILD_
     -DCMAKE_CXX_COMPILER="${CXX}" \
     ${CUDA_HOST_CXX:+-DCMAKE_CUDA_HOST_COMPILER="${CUDA_HOST_CXX}"} \
     ${CUDA_ARCH_FLAG} \
+    ${MPI_LINK_FLAGS:+-DCMAKE_EXE_LINKER_FLAGS="${MPI_LINK_FLAGS}"} \
     -DKokkos_ROOT="${KOKKOS_INSTALL}" \
     -DKokkos_DIR="${KOKKOS_CMAKE_MODULE_DIR}" \
     -DENABLE_KOKKOS="${ENABLE_KOKKOS}" \
