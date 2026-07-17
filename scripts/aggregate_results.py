@@ -106,6 +106,18 @@ def normalize_kokkos_use(value: str) -> str:
     return f"KOKKOS_{value}"
 
 
+def display_impl_label(kokkos_use: str, backend: Optional[str] = None) -> str:
+    """Map internal KOKKOS_ON/OFF labels to chart legend names."""
+    normalized = normalize_kokkos_use(kokkos_use)
+    if normalized == "KOKKOS_ON":
+        return "KOKKOS"
+    if normalized == "KOKKOS_OFF":
+        if backend:
+            return backend.upper()
+        return "NATIVE"
+    return normalized
+
+
 def build_chart_title(
     data: pd.DataFrame,
     kokkos_use: Optional[str] = None,
@@ -313,7 +325,7 @@ def load_compare_results(root: Path, backend: Optional[str] = None) -> pd.DataFr
     )
 
     frames: List[pd.DataFrame] = []
-    for kokkos in KOKKOS_HUE_ORDER:
+    for kokkos in ("KOKKOS_OFF", "KOKKOS_ON"):
         for batch_dir in batch_dirs:
             if not batch_has_kokkos_config(batch_dir, kokkos, backend):
                 continue
@@ -407,11 +419,13 @@ PIPELINE_COLOR = "#1E90FF"
 MEMORY_COLOR = "#FF8C1A"
 PIPELINE_ERR_COLOR = "#1565C0"
 MEMORY_ERR_COLOR = "#E65100"
-KOKKOS_COLORS = {
-    "KOKKOS_ON": "#1E90FF",
-    "KOKKOS_OFF": "#FF4D6D",
+# Display labels used in compare charts (after mapping from KOKKOS_ON/OFF).
+COMPARE_COLORS = {
+    "KOKKOS": "#1E90FF",
+    "CUDA": "#FF4D6D",
+    "HIP": "#FF4D6D",
 }
-KOKKOS_HUE_ORDER = ("KOKKOS_OFF", "KOKKOS_ON")
+COMPARE_HUE_ORDER = ("CUDA", "HIP", "KOKKOS")
 ERRORBAR_LINEWIDTH = 1.8
 ERRORBAR_CAPSIZE = 0.16
 ERRORBAR_CAPTHICK = 1.8
@@ -509,9 +523,23 @@ def plot_compare_results(
         sys.exit("Compare chart requires a 'kokkos_use' column in aggregated results.")
 
     plot_data = data.copy()
-    plot_data["kokkos_use"] = plot_data["kokkos_use"].map(normalize_kokkos_use)
+    backends = (
+        plot_data["backend"].astype(str).str.upper()
+        if "backend" in plot_data.columns
+        else pd.Series(["NATIVE"] * len(plot_data))
+    )
+    plot_data["impl"] = [
+        display_impl_label(kokkos, backend)
+        for kokkos, backend in zip(plot_data["kokkos_use"], backends)
+    ]
+    present = [label for label in COMPARE_HUE_ORDER if label in set(plot_data["impl"])]
+    palette = {label: COMPARE_COLORS[label] for label in present}
+
     plot_data["rank_label"] = plot_data["ranks"].astype(str)
-    use_error_bars = "run" in plot_data.columns and plot_data.groupby(["ranks", "kokkos_use"])["run"].nunique().max() > 1
+    use_error_bars = (
+        "run" in plot_data.columns
+        and plot_data.groupby(["ranks", "impl"])["run"].nunique().max() > 1
+    )
 
     sns.set_theme(style="ticks", context="talk", palette="colorblind")
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -520,9 +548,9 @@ def plot_compare_results(
         data=plot_data,
         x="rank_label",
         y=pipeline_col,
-        hue="kokkos_use",
-        hue_order=KOKKOS_HUE_ORDER,
-        palette=KOKKOS_COLORS,
+        hue="impl",
+        hue_order=present,
+        palette=palette,
         edgecolor="white",
         linewidth=0.8,
         errorbar="sd" if use_error_bars else None,
@@ -541,6 +569,7 @@ def plot_compare_results(
         linestyle="-",
         zorder=0,
     )
+    ax.legend(title=None)
     sns.despine(ax=ax)
 
     fig.tight_layout()
@@ -573,13 +602,10 @@ def main() -> None:
                 f"No {SUMMARY_CSV_NAME} files found for both KOKKOS_ON and KOKKOS_OFF "
                 f"under {root / 'results'}"
             )
-        title = build_chart_title(data, backend=args.backend)
         if "kokkos_use" in data.columns and data["kokkos_use"].nunique() > 1:
-            title = title.replace(
-                "mhm2 kmer analysis proxy",
-                "mhm2 kmer analysis proxy (KOKKOS_ON vs KOKKOS_OFF)",
-                1,
-            )
+            title = "MHM2 Kmer Analysis Proxy"
+        else:
+            title = build_chart_title(data, backend=args.backend)
     else:
         data = load_results(root, args.batch_dir, args.kokkos_use, args.backend)
         if data.empty:
