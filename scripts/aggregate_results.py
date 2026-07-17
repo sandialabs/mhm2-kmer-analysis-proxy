@@ -402,14 +402,14 @@ def summarize_by_rank(data: pd.DataFrame, pipeline_col: str, memory_col: str) ->
     return grouped
 
 
-# Colorblind-friendly Tol palette for dual-axis charts.
-PIPELINE_COLOR = "#4477AA"
-MEMORY_COLOR = "#EE7733"
-PIPELINE_ERR_COLOR = "#336699"
-MEMORY_ERR_COLOR = "#D97706"
+# Brighter palette (still distinguishable ON vs OFF).
+PIPELINE_COLOR = "#1E90FF"
+MEMORY_COLOR = "#FF8C1A"
+PIPELINE_ERR_COLOR = "#1565C0"
+MEMORY_ERR_COLOR = "#E65100"
 KOKKOS_COLORS = {
-    "KOKKOS_ON": "#4477AA",
-    "KOKKOS_OFF": "#CC6677",
+    "KOKKOS_ON": "#1E90FF",
+    "KOKKOS_OFF": "#FF4D6D",
 }
 KOKKOS_HUE_ORDER = ("KOKKOS_OFF", "KOKKOS_ON")
 ERRORBAR_LINEWIDTH = 1.8
