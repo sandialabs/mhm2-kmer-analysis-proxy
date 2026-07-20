@@ -623,9 +623,15 @@ static cigar *banded_sw(const int8_t *ref, const int8_t *read, int32_t refLen, i
       ++s1;
       kroundup32(s1);
     }
-    while (width_d * readLen * 3 >= s2) {
+    while ((int64_t)width_d * readLen * 3 >= s2) {
       ++s2;
       kroundup32(s2);
+      if (s2 <= 0) {
+        fprintf(stderr, "Alignment score and position are not consensus.\n");
+        free(c);
+        free(result);
+        return 0;
+      }
     }
     direction = direction_line = nullptr;
   }
@@ -634,7 +640,7 @@ static cigar *banded_sw(const int8_t *ref, const int8_t *read, int32_t refLen, i
   h_b = (int32_t *)malloc(s1 * sizeof(int32_t));
   e_b = (int32_t *)malloc(s1 * sizeof(int32_t));
   h_c = (int32_t *)malloc(s1 * sizeof(int32_t));
-  direction = (int8_t *)malloc(s2 * sizeof(int8_t));
+  direction = (int8_t *)malloc((size_t)s2 * sizeof(int8_t));
 
   do {
     width = band_width * 2 + 3, width_d = band_width * 2 + 1;
@@ -645,13 +651,20 @@ static cigar *banded_sw(const int8_t *ref, const int8_t *read, int32_t refLen, i
       e_b = (int32_t *)realloc(e_b, s1 * sizeof(int32_t));
       h_c = (int32_t *)realloc(h_c, s1 * sizeof(int32_t));
     }
-    while (width_d * readLen * 3 >= s2) {
+    while ((int64_t)width_d * readLen * 3 >= s2) {
       ++s2;
       kroundup32(s2);
-      if (s2 < 0) {
+      if (s2 <= 0) {
         fprintf(stderr, "Alignment score and position are not consensus.\n");
+        free(direction);
+        free(h_c);
+        free(e_b);
+        free(h_b);
+        free(c);
+        free(result);
+        return 0;
       }
-      direction = (int8_t *)realloc(direction, s2 * sizeof(int8_t));
+      direction = (int8_t *)realloc(direction, (size_t)s2 * sizeof(int8_t));
     }
     direction_line = direction;
     for (j = 1; LIKELY(j < width - 1); j++) {
