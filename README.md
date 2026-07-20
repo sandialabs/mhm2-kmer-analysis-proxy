@@ -138,6 +138,24 @@ Environment variables:
 
 Results are written to `proxy_results_summary.csv` in the run directory, including read counts, kmer statistics, peak memory, and timing.
 
+Aggregate and plot batch results with `scripts/process_and_visualize.py` (for example `--compare --backend CUDA`).
+
+## Performance
+
+Pipeline timing for the kmer-analysis stage (DHT construction), comparing the native vendor backend with Kokkos across 1–16 UPC++ ranks. Bars show mean pipeline time; error bars indicate run-to-run variation where multiple replicates were collected.
+
+### NVIDIA H100 (CUDA vs Kokkos::CUDA)
+
+At higher rank counts, Kokkos shows a modest advantage. This is not from faster Kokkos kernels — the CUDA `analyze_kmers` phase remains slightly faster. The native CUDA path pays a per-rank GPU first-touch cost (`cudaMalloc` followed by a full `cudaMemset` over roughly 80% of each rank’s share of device memory). That overhead grows as multiple ranks share a single H100; the Kokkos build does not use the same warmup path.
+
+![Pipeline timing on NVIDIA H100: CUDA vs Kokkos::CUDA](docs/figures/pipeline_timing_cuda_vs_kokkos.png)
+
+### AMD MI300A (HIP vs Kokkos::HIP)
+
+Kokkos outperforms native HIP at all tested ranks. We attribute this to unified CPU–GPU memory together with the native path’s first-touch memset / preallocation cost. The Kokkos implementation does not pre-allocate in the same way and can keep host- and device-visible data in a single shared allocation, so `deep_copy` is effectively a no-op on this platform.
+
+![Pipeline timing on AMD MI300A: HIP vs Kokkos::HIP](docs/figures/pipeline_timing_hip_vs_kokkos.png)
+
 ## Docker (experimental)
 
 Docker support is experimental. It is limited to a **single machine** and **CPUs only** (no GPUs).
