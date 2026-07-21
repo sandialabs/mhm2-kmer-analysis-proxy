@@ -332,8 +332,8 @@ bool Options::load(int argc, char **argv) {
   if (getenv("MHM2_PIN")) pin_by = getenv("MHM2_PIN");  // get default from the environment if it exists
   app.add_option("--pin", pin_by,
                  "Restrict processes according to logical CPUs, cores (groups of hardware threads), "
-                 "or NUMA domains (cpu, core, numa, none).")
-      ->check(CLI::IsMember({"cpu", "core", "numa", "rr_numa", "none"}))
+                 "NUMA domains, or spread (partition physical cores across local ranks: cpu, core, spread, numa, rr_numa, none).")
+      ->check(CLI::IsMember({"cpu", "core", "spread", "numa", "rr_numa", "none"}))
       ->group("Performance trade-off options");
   app.add_option("--sequencing-depth", sequencing_depth, "Expected average sequencing depth")
       ->check(CLI::Range(1, 100))

@@ -79,9 +79,20 @@ Build and install with `scripts/build.sh` from the repository root. The script c
 ```bash
 ./scripts/build.sh
 KOKKOS_USE=KOKKOS_OFF ./scripts/build.sh
+BACKEND=CPU KOKKOS_USE=KOKKOS_OFF ./scripts/build.sh
+BACKEND=CPU KOKKOS_USE=KOKKOS_ON KOKKOS_INSTALL=/path/to/kokkos-openmp ./scripts/build.sh
 ```
 
-Set `KOKKOS_USE` to `KOKKOS_ON` (default) or `KOKKOS_OFF` to select the Kokkos install, C++ standard, and install prefix. On InfiniBand systems, the script uses `mpicxx`/`mpicc`; ensure UPC++ and Kokkos were built with the same toolchain. See the [UPC++ Linux configuration notes](https://bitbucket.org/berkeleylab/upcxx/wiki/INSTALL#markdown-header-configuration-linux).
+Set `KOKKOS_USE` to `KOKKOS_ON` (default) or `KOKKOS_OFF`, and `BACKEND` to `CUDA` (default), `HIP`, or `CPU`:
+
+| `BACKEND` | `KOKKOS_USE` | What you get |
+|-----------|--------------|--------------|
+| `CUDA` / `HIP` | `KOKKOS_OFF` | Native CUDA/HIP GPU kernels |
+| `CUDA` / `HIP` | `KOKKOS_ON` | Kokkos GPU kernels (Kokkos built with CUDA/HIP) |
+| `CPU` | `KOKKOS_OFF` | Host-only UPC++ (`kcount_cpu`); CUDA/HIP disabled in the app |
+| `CPU` | `KOKKOS_ON` | Kokkos on a **host** ExecutionSpace only; CUDA/HIP disabled in the app. `KOKKOS_INSTALL` must be a Kokkos build with OpenMP/Serial/Threads and **no** CUDA/HIP/SYCL device backend (`build.sh` checks `KokkosCore_config.h`) |
+
+Install prefixes are `install_<BACKEND>_<KOKKOS_USE>/` (for example `install_CPU_KOKKOS_OFF/`). On InfiniBand systems, the script uses `mpicxx`/`mpicc`; ensure UPC++ and Kokkos were built with the same toolchain. See the [UPC++ Linux configuration notes](https://bitbucket.org/berkeleylab/upcxx/wiki/INSTALL#markdown-header-configuration-linux).
 
 Optional first argument (default `Release`): `Debug`, `RelWithDebInfo`, `clean`, or `cleanall`.
 
@@ -126,6 +137,11 @@ For benchmark runs on El Dorado with preconfigured inputs and install paths:
 ```bash
 ./scripts/run.sh
 RUN_BENCHMARK_LOOP=1 ./scripts/run.sh
+BACKEND=CPU KOKKOS_USE=KOKKOS_OFF RUN_BENCHMARK_LOOP=1 ./scripts/run.sh
+# Kokkos::OpenMP: fixed OMP_NUM_THREADS=2 per rank (override OMP_THREADS_PER_RANK),
+# OMP_PROC_BIND=close, OMP_PLACES=cores, --pin=spread.
+BACKEND=CPU KOKKOS_USE=KOKKOS_ON RUN_BENCHMARK_LOOP=1 ./scripts/run.sh
+# Optional: OMP_THREADS_PER_RANK=4 MHM2_PIN=core ...
 ```
 
 Environment variables:
@@ -133,12 +149,18 @@ Environment variables:
 | Variable | Description |
 |----------|-------------|
 | `KOKKOS_USE` | `KOKKOS_ON` (default) or `KOKKOS_OFF` |
+| `BACKEND` | `CUDA` (default), `HIP`, or `CPU` (disables CUDA/HIP in the app) |
 | `NUM_RANKS` | Number of UPC++ ranks (default: 2) |
+| `NUM_RUNS` | Replicates per rank count (default: 3) |
 | `RUN_BENCHMARK_LOOP` | If set, sweep ranks 1, 2, 4, …, 16 |
+| `OMP_THREADS_PER_RANK` | CPU + `KOKKOS_ON`: OpenMP threads per UPC++ rank (default: `2`; capped by `physical_cores / NUM_RANKS`) |
+| `OMP_PROC_BIND` | CPU + `KOKKOS_ON`: default `close` |
+| `OMP_PLACES` | CPU + `KOKKOS_ON`: default `cores` |
+| `MHM2_PIN` | CPU + `KOKKOS_ON`: default `spread` (partition **physical cores** across local ranks before Kokkos/OpenMP init; keeps SMT siblings together). Other backends default to `none`. |
 
-Results are written to `proxy_results_summary.csv` in the run directory, including read counts, kmer statistics, peak memory, and timing.
+Results land under `results/<BACKEND>/results_<timestamp>_<hash>/` with per-rank dirs named `KOKKOS_{ON|OFF}_{BACKEND}_ranks_<N>` (for example `KOKKOS_ON_CPU_ranks_4/`). Each run writes `proxy_results_summary.csv` (read counts, kmer statistics, peak memory, timing).
 
-Aggregate and plot batch results with `scripts/process_and_visualize.py` (for example `--compare --backend CUDA`).
+Aggregate and plot batch results with `scripts/process_and_visualize.py` (for example `--compare --backend CUDA` or `--compare --backend CPU`).
 
 ## Performance
 

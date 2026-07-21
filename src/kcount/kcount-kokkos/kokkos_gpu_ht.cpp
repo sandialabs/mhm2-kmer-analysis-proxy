@@ -357,7 +357,11 @@ const uint64_t KOKKOS_TWINS[256] = {
 
 KOKKOS_INLINE_FUNCTION void revcomp(uint64_t *longs, uint64_t *rc_longs, int kmer_len, int num_longs,
                                     Kokkos::View<uint64_t[256]> twins_v) {
+  // Zero first so OpenMP host builds do not warn about maybe-uninitialized
+  // reads of rc_longs[0] after the write loop (GCC cannot always prove coverage).
+  for (int i = 0; i < num_longs; i++) rc_longs[i] = 0;
   int last_long = (kmer_len + 31) / 32;
+  if (last_long <= 0) return;
   for (size_t i = 0; i < last_long; i++) {
     uint64_t v = longs[i];
     rc_longs[last_long - 1 - i] = (twins_v(v & 0xFF) << 56) | (twins_v((v >> 8) & 0xFF) << 48) | (twins_v((v >> 16) & 0xFF) << 40) |
@@ -428,7 +432,7 @@ KOKKOS_FUNCTION bool get_kmer_from_supermer(Kokkos::View<char *> seqs_view, Kokk
     Kokkos::printf("threadid %d, invalid char for right nucleotide %d", kokkos_index, (uint8_t)right_ext);
     return false;
   }
-  uint64_t kmer_rc[N_LONGS];
+  uint64_t kmer_rc[N_LONGS] = {};
   revcomp(kmer, kmer_rc, kmer_len, N_LONGS, twins_v);
   for (int l = 0; l < N_LONGS; l++) {
     if (kmer_rc[l] == kmer[l]) continue;

@@ -327,6 +327,94 @@ void pin_core() {
   }
 }
 
+static vector<int> parse_cpu_list(const string &list) {
+  vector<int> cpus;
+  stringstream ss(list);
+  while (ss.good()) {
+    string s;
+    getline(ss, s, ',');
+    s = left_trim(s);
+    if (s.empty()) continue;
+    auto dash_pos = s.find('-');
+    if (dash_pos != string::npos) {
+      int start = std::stoi(s.substr(0, dash_pos));
+      int stop = std::stoi(s.substr(dash_pos + 1)) + 1;
+      for (int i = start; i < stop; i++) cpus.push_back(i);
+    } else {
+      cpus.push_back(std::stoi(s));
+    }
+  }
+  return cpus;
+}
+
+vector<int> get_online_cpus() {
+  ifstream f("/sys/devices/system/cpu/online");
+  string buf;
+  if (f && getline(f, buf)) return parse_cpu_list(buf);
+  // Fall back to the process affinity mask (may already be restricted).
+  return get_pinned_cpus();
+}
+
+// Group online logical CPUs into physical cores via thread_siblings_list.
+// Contiguous logical IDs (0-31 vs 32-63 on EPYC) are SMT siblings of the SAME
+// cores — partitioning by logical ID makes ranks share physical cores.
+static vector<vector<int>> get_physical_cores() {
+  vector<vector<int>> cores;
+  unordered_map<string, int> sib_to_idx;
+  for (int cpu : get_online_cpus()) {
+    ifstream f("/sys/devices/system/cpu/cpu" + to_string(cpu) + "/topology/thread_siblings_list");
+    string sib;
+    if (!(f && getline(f, sib))) {
+      // No topology info: treat each logical CPU as its own "core".
+      cores.push_back({cpu});
+      continue;
+    }
+    sib = left_trim(sib);
+    auto it = sib_to_idx.find(sib);
+    if (it == sib_to_idx.end()) {
+      sib_to_idx.emplace(sib, static_cast<int>(cores.size()));
+      // Prefer the sorted sibling CPU list so every rank sees the same set.
+      auto sib_cpus = parse_cpu_list(sib);
+      sort(sib_cpus.begin(), sib_cpus.end());
+      cores.push_back(std::move(sib_cpus));
+    }
+  }
+  // Deterministic order by first logical CPU id in each core.
+  sort(cores.begin(), cores.end(), [](const vector<int> &a, const vector<int> &b) {
+    return a.empty() || b.empty() ? a.size() < b.size() : a.front() < b.front();
+  });
+  return cores;
+}
+
+void pin_spread() {
+  auto cores = get_physical_cores();
+  if (cores.empty()) return;
+
+  const int nlocal = upcxx::local_team().rank_n();
+  const int me = upcxx::local_team().rank_me();
+  const int ncores = static_cast<int>(cores.size());
+
+  vector<int> mine;
+  if (nlocal <= ncores) {
+    // Partition physical cores evenly; each rank gets whole cores (all SMT threads).
+    const int per = ncores / nlocal;
+    const int rem = ncores % nlocal;
+    const int start = me * per + std::min(me, rem);
+    const int count = per + (me < rem ? 1 : 0);
+    for (int i = start; i < start + count; i++) {
+      mine.insert(mine.end(), cores[i].begin(), cores[i].end());
+    }
+  } else {
+    // More ranks than cores: one HW thread per rank, round-robin over cores.
+    const auto &core = cores[me % ncores];
+    mine.push_back(core[(me / ncores) % static_cast<int>(core.size())]);
+  }
+
+  if (!mine.empty()) pin_proc(mine);
+  SLOG_VERBOSE("Pinning spread by physical cores across local ranks: process 0 on node 0 pinned to cpus ", get_proc_pin(),
+               "\n");
+ }
+
 void pin_numa(bool round_robin) {
   string numa_node_dir = "/sys/devices/system/node";
   auto numa_node_entries = get_dir_entries(numa_node_dir, "node");

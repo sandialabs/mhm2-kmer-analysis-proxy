@@ -6,9 +6,28 @@ cd "${ROOT}"
 
 # Project root directory (contains input files and Kokkos installation)
 export PROJECT_ROOT="${PROJECT_ROOT:=/projects/wg-proxy-apps}"
-# GPU backend to build for: CUDA (NVIDIA, e.g. hopper/H100) or HIP (AMD, MI300A).
+# Backend: CUDA (NVIDIA), HIP (AMD), or CPU (no CUDA/HIP in the app).
+# Pair with KOKKOS_ON/OFF independently:
+#   CPU + KOKKOS_OFF  -> classic host kcount (UPC++ only)
+#   CPU + KOKKOS_ON   -> Kokkos kernels on a host ExecutionSpace (OpenMP/Serial/Threads)
 export BACKEND="${BACKEND:=CUDA}"
 export KOKKOS_USE="${KOKKOS_USE:=KOKKOS_ON}"
+
+case "${BACKEND}" in
+  CUDA|HIP|CPU) ;;
+  *)
+    echo "ERROR: BACKEND must be CUDA, HIP, or CPU (got '${BACKEND}')." >&2
+    exit 1
+    ;;
+esac
+
+case "${KOKKOS_USE}" in
+  KOKKOS_ON|KOKKOS_OFF) ;;
+  *)
+    echo "ERROR: KOKKOS_USE must be KOKKOS_ON or KOKKOS_OFF (got '${KOKKOS_USE}')." >&2
+    exit 1
+    ;;
+esac
 
 # mhm2 proxy install directory
 PROXY_INSTALL="${ROOT}/install_${BACKEND}_${KOKKOS_USE}"
@@ -32,12 +51,13 @@ fi
 export PROXY_KOKKOS_INSTALL="${PROXY_INSTALL}"
 export MHM2_INSTALL_PATH="${PROXY_KOKKOS_INSTALL}"
 
-# Default Kokkos install depends on the GPU backend. Override KOKKOS_INSTALL to
-# use a different one.
+# Default Kokkos install depends on the app backend. Override KOKKOS_INSTALL to
+# use a different one. CPU+KOKKOS_ON must point at a host-only Kokkos build
+# (OpenMP / Serial / Threads — no CUDA/HIP/SYCL device backend).
 case "${BACKEND}" in
   CUDA) KOKKOS_INSTALL_DEFAULT="${HOME}/Kokkos/kokkos/install-hopper" ;;
   HIP)  KOKKOS_INSTALL_DEFAULT="${HOME}/Kokkos/kokkos/install-mi300a" ;;
-  *)    KOKKOS_INSTALL_DEFAULT="" ;;
+  CPU)  KOKKOS_INSTALL_DEFAULT="${KOKKOS_CPU_INSTALL:-${HOME}/Kokkos/kokkos/install-cpu}" ;;
 esac
 
 if [ "${KOKKOS_USE}" = "KOKKOS_ON" ]; then
@@ -45,12 +65,21 @@ if [ "${KOKKOS_USE}" = "KOKKOS_ON" ]; then
   CXXSTD=20
   ENABLE_KOKKOS=ON
 else
-  export KOKKOS_INSTALL="${KOKKOS_INSTALL:=${KOKKOS_INSTALL_DEFAULT}}"
+  # KOKKOS_OFF does not link Kokkos; leave install unset unless the user set it.
+  if [ "${BACKEND}" = "CPU" ]; then
+    export KOKKOS_INSTALL="${KOKKOS_INSTALL:-}"
+  else
+    export KOKKOS_INSTALL="${KOKKOS_INSTALL:=${KOKKOS_INSTALL_DEFAULT}}"
+  fi
   CXXSTD=17
   ENABLE_KOKKOS=OFF
 fi
 
-export KOKKOS_CMAKE_MODULE_DIR="${KOKKOS_INSTALL}/lib64/cmake/Kokkos"
+if [ -n "${KOKKOS_INSTALL}" ]; then
+  export KOKKOS_CMAKE_MODULE_DIR="${KOKKOS_INSTALL}/lib64/cmake/Kokkos"
+else
+  export KOKKOS_CMAKE_MODULE_DIR=""
+fi
 
 # CUDA compute capability for the target GPU (H100/hopper = 90). Set explicitly
 # so the build does not fall back to "native" arch detection, which fails on a
@@ -59,6 +88,45 @@ CUDA_ARCH="${CUDA_ARCH:-90}"
 CUDA_ARCH_FLAG=""
 if [ "${BACKEND}" = "CUDA" ] && [ -n "${CUDA_ARCH}" ]; then
   CUDA_ARCH_FLAG="-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCH}"
+fi
+
+# Force CPU-only app builds even when nvcc/hipcc are on PATH.
+GPU_ENABLE_FLAGS=""
+if [ "${BACKEND}" = "CPU" ]; then
+  GPU_ENABLE_FLAGS="-DENABLE_CUDA=OFF -DENABLE_HIP=OFF"
+fi
+
+# For CPU + KOKKOS_ON, require a host-parallel Kokkos install (no device backend).
+_check_cpu_kokkos_install() {
+  local install_dir=$1
+  local cfg="${install_dir}/include/KokkosCore_config.h"
+  if [ ! -f "${cfg}" ]; then
+    echo "ERROR: Kokkos CPU install missing ${cfg}" >&2
+    echo "Set KOKKOS_INSTALL (or KOKKOS_CPU_INSTALL) to a host-only Kokkos prefix." >&2
+    exit 1
+  fi
+  if grep -qE '^#define KOKKOS_ENABLE_(CUDA|HIP|SYCL)\b' "${cfg}"; then
+    echo "ERROR: ${install_dir} enables a Kokkos device backend (CUDA/HIP/SYCL)." >&2
+    echo "BACKEND=CPU KOKKOS_USE=KOKKOS_ON requires a Kokkos build with only" >&2
+    echo "host parallel backends (OPENMP, SERIAL, and/or THREADS)." >&2
+    exit 1
+  fi
+  if ! grep -qE '^#define KOKKOS_ENABLE_(OPENMP|SERIAL|THREADS)\b' "${cfg}"; then
+    echo "ERROR: ${install_dir} has no host parallel Kokkos backend enabled." >&2
+    echo "Rebuild Kokkos with -DKokkos_ENABLE_OPENMP=ON (preferred) or SERIAL/THREADS." >&2
+    exit 1
+  fi
+  echo "Kokkos CPU backends from ${cfg}:"
+  grep -E '^#define KOKKOS_ENABLE_(OPENMP|SERIAL|THREADS|CUDA|HIP|SYCL)\b' "${cfg}" || true
+}
+
+if [ "${BACKEND}" = "CPU" ] && [ "${KOKKOS_USE}" = "KOKKOS_ON" ]; then
+  if [ -z "${KOKKOS_INSTALL}" ]; then
+    echo "ERROR: BACKEND=CPU KOKKOS_USE=KOKKOS_ON requires KOKKOS_INSTALL" >&2
+    echo "(host-only Kokkos with OpenMP/Serial/Threads, not a GPU Kokkos install)." >&2
+    exit 1
+  fi
+  _check_cpu_kokkos_install "${KOKKOS_INSTALL}"
 fi
 
 BUILD_CMD="${1:-Release}"
@@ -179,9 +247,10 @@ if [ "${BUILD_CMD}" = "Debug" ] || [ "${BUILD_CMD}" = "Release" ] || [ "${BUILD_
     -DCMAKE_CXX_COMPILER="${CXX}" \
     ${CUDA_HOST_CXX:+-DCMAKE_CUDA_HOST_COMPILER="${CUDA_HOST_CXX}"} \
     ${CUDA_ARCH_FLAG} \
+    ${GPU_ENABLE_FLAGS} \
     ${MPI_LINK_FLAGS:+-DCMAKE_EXE_LINKER_FLAGS="${MPI_LINK_FLAGS}"} \
-    -DKokkos_ROOT="${KOKKOS_INSTALL}" \
-    -DKokkos_DIR="${KOKKOS_CMAKE_MODULE_DIR}" \
+    ${KOKKOS_INSTALL:+-DKokkos_ROOT="${KOKKOS_INSTALL}"} \
+    ${KOKKOS_CMAKE_MODULE_DIR:+-DKokkos_DIR="${KOKKOS_CMAKE_MODULE_DIR}"} \
     -DENABLE_KOKKOS="${ENABLE_KOKKOS}" \
     ${MHM2_CMAKE_EXTRAS:-}
 fi

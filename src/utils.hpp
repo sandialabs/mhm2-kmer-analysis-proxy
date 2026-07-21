@@ -97,6 +97,10 @@ void pin_core();
 
 void pin_numa(bool round_robin = false);
 
+// Partition physical cores evenly across local UPC++ ranks (for hybrid OpenMP).
+// Uses thread_siblings_list so SMT pairs stay together and ranks do not share cores.
+void pin_spread();
+
 void log_local(std::string header, std::string msg);
 
 void log_pins();

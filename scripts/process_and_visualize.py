@@ -77,11 +77,49 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def latest_batch_dir(root: Path) -> Optional[Path]:
+def _is_batch_dir(path: Path) -> bool:
+    """A results batch contains one or more KOKKOS_*_ranks_* run directories."""
+    if not path.is_dir():
+        return False
+    try:
+        for child in path.iterdir():
+            if child.is_dir() and OUTPUT_DIR_PATTERN.match(child.name):
+                return True
+    except OSError:
+        return False
+    return False
+
+
+def iter_batch_dirs(root: Path) -> List[Path]:
+    """Find batch dirs under results/, including results/<BACKEND>/results_*.
+
+    Supports both legacy flat layout (results/results_*) and backend-grouped
+    layout (results/CPU/results_*, results/CUDA/results_*, ...).
+    """
     results_root = root / "results"
     if not results_root.is_dir():
-        return None
-    batch_dirs = [p for p in results_root.iterdir() if p.is_dir()]
+        return []
+
+    batch_dirs: List[Path] = []
+    for path in results_root.iterdir():
+        if not path.is_dir():
+            continue
+        if _is_batch_dir(path):
+            batch_dirs.append(path)
+            continue
+        # Backend grouping: results/CUDA/results_TS_HASH/
+        try:
+            for child in path.iterdir():
+                if _is_batch_dir(child):
+                    batch_dirs.append(child)
+        except OSError:
+            continue
+
+    return batch_dirs
+
+
+def latest_batch_dir(root: Path) -> Optional[Path]:
+    batch_dirs = iter_batch_dirs(root)
     if not batch_dirs:
         return None
     return max(batch_dirs, key=lambda p: p.stat().st_mtime)
@@ -110,6 +148,12 @@ def display_impl_label(kokkos_use: str, backend: Optional[str] = None) -> str:
     """Map internal KOKKOS_ON/OFF labels to chart legend names."""
     normalized = normalize_kokkos_use(kokkos_use)
     backend_label = backend.upper() if backend else "NATIVE"
+    # Host builds: classic kcount_cpu vs Kokkos OpenMP ExecutionSpace.
+    if backend_label == "CPU":
+        if normalized == "KOKKOS_ON":
+            return "Kokkos::OpenMP"
+        if normalized == "KOKKOS_OFF":
+            return "Serial"
     if normalized == "KOKKOS_ON":
         return f"KOKKOS::{backend_label}" if backend else "KOKKOS"
     if normalized == "KOKKOS_OFF":
@@ -122,22 +166,24 @@ def build_chart_title(
     kokkos_use: Optional[str] = None,
     backend: Optional[str] = None,
 ) -> str:
-    title_parts = []
+    resolved_backend = backend
+    if resolved_backend is None and "backend" in data.columns and len(data["backend"].unique()) == 1:
+        resolved_backend = str(data["backend"].iloc[0])
 
-    if kokkos_use:
-        title_parts.append(normalize_kokkos_use(kokkos_use))
-    elif "kokkos_use" in data.columns:
+    resolved_kokkos = kokkos_use
+    if resolved_kokkos is None and "kokkos_use" in data.columns:
         kokkos_values = data["kokkos_use"].map(normalize_kokkos_use).unique()
         if len(kokkos_values) == 1:
-            title_parts.append(kokkos_values[0])
+            resolved_kokkos = kokkos_values[0]
 
-    if backend:
-        title_parts.append(backend)
-    elif "backend" in data.columns and len(data["backend"].unique()) == 1:
-        title_parts.append(data["backend"].iloc[0])
+    # Prefer human-facing labels (Serial / Kokkos::OpenMP on CPU).
+    if resolved_kokkos is not None:
+        label = display_impl_label(resolved_kokkos, resolved_backend)
+        return f"MHM2 Kmer Analysis Proxy ({label})"
 
-    suffix = f" ({', '.join(title_parts)})" if title_parts else ""
-    return f"mhm2 kmer analysis proxy{suffix}"
+    if resolved_backend:
+        return f"MHM2 Kmer Analysis Proxy ({resolved_backend})"
+    return "MHM2 Kmer Analysis Proxy"
 
 
 def iter_run_csvs(output_dir: Path) -> List[tuple[int, Path]]:
@@ -250,15 +296,12 @@ def load_results_from_csv_dir(csv_dir: Path) -> pd.DataFrame:
 def iter_output_dirs(root: Path) -> List[Path]:
     output_dirs: List[Path] = []
 
-    results_root = root / "results"
-    if results_root.is_dir():
-        batch_dirs = sorted(p for p in results_root.iterdir() if p.is_dir())
-        if batch_dirs:
-            batch_dirs = [max(batch_dirs, key=lambda p: p.stat().st_mtime)]
-        for batch_dir in batch_dirs:
-            for output_dir in sorted(batch_dir.iterdir()):
-                if output_dir.is_dir() and OUTPUT_DIR_PATTERN.match(output_dir.name):
-                    output_dirs.append(output_dir)
+    batch_dirs = iter_batch_dirs(root)
+    if batch_dirs:
+        latest = max(batch_dirs, key=lambda p: p.stat().st_mtime)
+        for output_dir in sorted(latest.iterdir()):
+            if output_dir.is_dir() and OUTPUT_DIR_PATTERN.match(output_dir.name):
+                output_dirs.append(output_dir)
 
     if not output_dirs:
         for output_dir in sorted(root.iterdir()):
@@ -313,15 +356,13 @@ def load_batch_data(
 
 
 def load_compare_results(root: Path, backend: Optional[str] = None) -> pd.DataFrame:
-    results_root = root / "results"
-    if not results_root.is_dir():
-        return pd.DataFrame()
-
     batch_dirs = sorted(
-        (p for p in results_root.iterdir() if p.is_dir()),
+        iter_batch_dirs(root),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
+    if not batch_dirs:
+        return pd.DataFrame()
 
     frames: List[pd.DataFrame] = []
     for kokkos in ("KOKKOS_OFF", "KOKKOS_ON"):
@@ -422,11 +463,25 @@ MEMORY_ERR_COLOR = "#E65100"
 COMPARE_COLORS = {
     "KOKKOS::CUDA": "#1E90FF",
     "KOKKOS::HIP": "#1E90FF",
+    "Kokkos::OpenMP": "#1E90FF",
+    "KOKKOS::CPU": "#1E90FF",
     "KOKKOS": "#1E90FF",
     "CUDA": "#FF4D6D",
     "HIP": "#FF4D6D",
+    "Serial": "#FF4D6D",
+    "CPU": "#FF4D6D",
 }
-COMPARE_HUE_ORDER = ("CUDA", "HIP", "KOKKOS::CUDA", "KOKKOS::HIP", "KOKKOS")
+COMPARE_HUE_ORDER = (
+    "CUDA",
+    "HIP",
+    "Serial",
+    "CPU",
+    "KOKKOS::CUDA",
+    "KOKKOS::HIP",
+    "Kokkos::OpenMP",
+    "KOKKOS::CPU",
+    "KOKKOS",
+)
 ERRORBAR_LINEWIDTH = 1.8
 ERRORBAR_CAPSIZE = 0.16
 ERRORBAR_CAPTHICK = 1.8

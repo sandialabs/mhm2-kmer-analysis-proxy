@@ -86,7 +86,11 @@ struct kcount_gpu::ParseAndPackDriverState {
 
 KOKKOS_INLINE_FUNCTION void revcomp(uint64_t *longs, uint64_t *rc_longs, int kmer_len, int num_longs,
                                     Kokkos::View<uint64_t[256]> twins_v) {
+  // Zero first so OpenMP host builds do not warn about maybe-uninitialized
+  // reads of rc_longs[0] after the write loop (GCC cannot always prove coverage).
+  for (int i = 0; i < num_longs; i++) rc_longs[i] = 0;
   int last_long = (kmer_len + 31) / 32;
+  if (last_long <= 0) return;
   for (size_t i = 0; i < last_long; i++) {
     uint64_t v = longs[i];
     rc_longs[last_long - 1 - i] = (twins_v(v & 0xFF) << 56) | (twins_v((v >> 8) & 0xFF) << 48) | (twins_v((v >> 16) & 0xFF) << 40) |
@@ -205,7 +209,7 @@ void parse_and_pack(Kokkos::View<char *> seqs, int minimizer_len, int kmer_len, 
       "parse_and_pack", num_kmers, KOKKOS_LAMBDA(int i) {
         uint64_t kmer[MAX_LONGS];
         if (pack_seq_to_kmer(&(seqs(i)), kmer_len, num_longs, kmer)) {
-          uint64_t kmer_rc[MAX_LONGS];
+          uint64_t kmer_rc[MAX_LONGS] = {};
           revcomp(kmer, kmer_rc, kmer_len, num_longs, twins_v);
           kmer_targets_v(i) = gpu_minimizer_hash_fast(minimizer_len, kmer_len, num_longs, kmer, kmer_rc, mask_v) % num_ranks;
         } else {

@@ -106,6 +106,8 @@ void set_process_affinity(const string pin_by) {
     pin_cpu();
   else if (pin_by == "core")
     pin_core();
+  else if (pin_by == "spread")
+    pin_spread();
   else if (pin_by == "numa")
     pin_numa();
   else if (pin_by == "rr_numa")
@@ -437,19 +439,12 @@ int main(int argc, char *argv[]) {
   auto am_root = !rank_me();
 
 #ifdef ENABLE_KOKKOS
-  // Decide once (e.g. from a cmd-line flag, env var, or hard-coded)
+  // Parse before Options::load so --kokkos-print-config works; initialize only
+  // AFTER set_process_affinity so OpenMP inherits per-rank CPU masks (otherwise
+  // OMP_PROC_BIND=close binds every rank to place 0).
   bool kokkosPrintConfig = parsePrintConfigFlag(argc, argv);
-
-  if (kokkosPrintConfig) {  // KOKKOS INITIALIZE
-    auto settings = Kokkos::InitializationSettings().set_print_configuration(true);
-    Kokkos::initialize(settings);
-  } else {
-    // Use the argc/argv overload if not printing configuration
-    Kokkos::initialize(argc, argv);
-  }
-  // start timing after Kokkos initialization
+  bool kokkos_initialized = false;
   double kokkos_elapsed_time = 0.0;
-  Kokkos::Timer kokkos_timer;
 #endif
 
   BaseTimer pipeline_timer("run_pipeline", nullptr);  // no PromiseReduce possible
@@ -494,6 +489,18 @@ int main(int argc, char *argv[]) {
     SLOG_VERBOSE(init_timings);
     ProgressBar::SHOW_PROGRESS = options.show_progress;
     set_process_affinity(options.pin_by);
+
+#ifdef ENABLE_KOKKOS
+    if (kokkosPrintConfig) {
+      auto settings = Kokkos::InitializationSettings().set_print_configuration(true);
+      Kokkos::initialize(settings);
+    } else {
+      Kokkos::initialize(argc, argv);
+    }
+    kokkos_initialized = true;
+    Kokkos::Timer kokkos_timer;
+#endif
+
     log_env();
     update_rlimits(options.reads_fnames.size());
     set_thread_pool(options.max_worker_threads);
@@ -553,7 +560,7 @@ int main(int argc, char *argv[]) {
   }  // end application scope
 
 #ifdef ENABLE_KOKKOS
-  Kokkos::finalize();  // KOKKOS FINALIZE
+  if (kokkos_initialized) Kokkos::finalize();  // KOKKOS FINALIZE
 #endif
 
   BaseTimer finalize_timer("upcxx::finalize", nullptr);  // no PromiseReduce possible
