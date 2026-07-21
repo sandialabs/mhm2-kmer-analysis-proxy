@@ -72,6 +72,7 @@ export RUN_NETWORK="${RUN_NETWORK:=smp}"
 
 # OpenMP / Kokkos::OpenMP threading (CPU + KOKKOS_ON).
 # Default: fixed 2 threads per UPC++ rank. Override with OMP_THREADS_PER_RANK.
+# With RUN_OMP_THREAD_LOOP set, sweep OMP_THREADS_PER_RANK from 16 down to 1.
 # Still never exceeds physical_cores/NUM_RANKS (fair share).
 export OMP_PROC_BIND="${OMP_PROC_BIND:-close}"
 export OMP_PLACES="${OMP_PLACES:-cores}"
@@ -134,13 +135,17 @@ export CSV_DIR="${RESULTS_DIR}/csv"
 mkdir -p "${RESULTS_DIR}" "${CSV_DIR}"
 echo "BACKEND:       ${BACKEND}"
 echo "KOKKOS_USE:    ${KOKKOS_USE}"
-echo "Result label:  ${KOKKOS_USE}_${BACKEND}_ranks_<N>"
+echo "Result label:  ${KOKKOS_USE}_${BACKEND}_ranks_<N>[_threads_<T>]"
 echo "Results batch: ${RESULTS_DIR}"
 echo "CSV output:    ${CSV_DIR}"
 echo "Runs per rank: ${NUM_RUNS}"
 if [ "${BACKEND}" = "CPU" ] && [ "${KOKKOS_USE}" = "KOKKOS_ON" ]; then
   echo "OpenMP bind:   OMP_PROC_BIND=${OMP_PROC_BIND} OMP_PLACES=${OMP_PLACES}"
-  echo "OpenMP threads: fixed OMP_THREADS_PER_RANK=${OMP_THREADS_PER_RANK} (capped by cores/ranks)"
+  if [ -n "${RUN_OMP_THREAD_LOOP:-}" ]; then
+    echo "OpenMP threads: sweep 16..1 (capped by cores/ranks)"
+  else
+    echo "OpenMP threads: fixed OMP_THREADS_PER_RANK=${OMP_THREADS_PER_RANK} (capped by cores/ranks)"
+  fi
   echo "CPU pin:       --pin=\${MHM2_PIN:-spread} (partition physical cores across ranks before Kokkos/OpenMP init)"
 fi
 echo
@@ -161,7 +166,11 @@ _run_proxy() {
   local result_label="${KOKKOS_USE}_${BACKEND}"
   local install_dir="${ROOT}/install_${BACKEND}_${KOKKOS_USE}"
   local mhm2_bin="${install_dir}/bin/mhm2"
-  local rank_output="${RESULTS_DIR}/${result_label}_ranks_${NUM_RANKS}"
+  local out_suffix="ranks_${NUM_RANKS}"
+  if [ "${BACKEND}" = "CPU" ] && [ "${KOKKOS_USE}" = "KOKKOS_ON" ] && [ -n "${RUN_OMP_THREAD_LOOP:-}" ]; then
+    out_suffix="${out_suffix}_threads_${OMP_THREADS_PER_RANK}"
+  fi
+  local rank_output="${RESULTS_DIR}/${result_label}_${out_suffix}"
   mkdir -p "${rank_output}"
 
   if [ ! -x "${mhm2_bin}" ]; then
@@ -187,7 +196,7 @@ _run_proxy() {
     export PROXY_OUTPUT="${rank_output}/${run_label}"
     mkdir -p "${PROXY_OUTPUT}"
 
-    echo "--- ${result_label} ranks=${NUM_RANKS} ${run_label} ---"
+    echo "--- ${result_label} ranks=${NUM_RANKS} threads=${OMP_NUM_THREADS:-1} ${run_label} ---"
     echo "    binary: ${mhm2_bin}"
     echo "    output: ${PROXY_OUTPUT}"
     echo "    pin:    ${pin_arg}"
@@ -206,7 +215,11 @@ _run_proxy() {
     shopt -s nullglob
     for csv_file in "${ROOT}"/*.csv; do
       base=$(basename "${csv_file}" .csv)
-      cp "${csv_file}" "${CSV_DIR}/${base}_ranks_${NUM_RANKS}_${run_label}.csv"
+      local csv_name="${base}_ranks_${NUM_RANKS}_${run_label}.csv"
+      if [ "${BACKEND}" = "CPU" ] && [ "${KOKKOS_USE}" = "KOKKOS_ON" ] && [ -n "${RUN_OMP_THREAD_LOOP:-}" ]; then
+        csv_name="${base}_ranks_${NUM_RANKS}_threads_${OMP_THREADS_PER_RANK}_${run_label}.csv"
+      fi
+      cp "${csv_file}" "${CSV_DIR}/${csv_name}"
       rm -f "${csv_file}"
     done
     shopt -u nullglob
@@ -221,20 +234,33 @@ run_proxy_kokkos_on() {
   _run_proxy KOKKOS_ON
 }
 
-# Small — scale 1, 2, 4, 6, …, 16 ranks when RUN_BENCHMARK_LOOP is set
-if [ -n "${RUN_BENCHMARK_LOOP}" ]; then
-  for NUM_RANKS in 1 $(seq 2 2 16); do
-    export NUM_RANKS
-    if [ "${KOKKOS_USE}" == "KOKKOS_OFF" ]; then
-      run_proxy_kokkos_off
-    else
-      run_proxy_kokkos_on
-    fi
-  done
-else
+_run_once() {
   if [ "${KOKKOS_USE}" == "KOKKOS_OFF" ]; then
     run_proxy_kokkos_off
   else
     run_proxy_kokkos_on
   fi
+}
+
+_run_with_optional_omp_thread_loop() {
+  # OpenMP thread sweep (CPU + KOKKOS_ON): 16, 15, …, 1
+  if [ -n "${RUN_OMP_THREAD_LOOP:-}" ] && [ "${BACKEND}" = "CPU" ] && [ "${KOKKOS_USE}" = "KOKKOS_ON" ]; then
+    for OMP_THREADS_PER_RANK in $(seq 16 -1 1); do
+      export OMP_THREADS_PER_RANK
+      _run_once
+    done
+  else
+    _run_once
+  fi
+}
+
+# Small — scale 1, 2, 4, 6, …, 16 ranks when RUN_BENCHMARK_LOOP is set.
+# With RUN_OMP_THREAD_LOOP, also sweep OpenMP threads 16..1 per rank count.
+if [ -n "${RUN_BENCHMARK_LOOP}" ]; then
+  for NUM_RANKS in 1 $(seq 2 2 16); do
+    export NUM_RANKS
+    _run_with_optional_omp_thread_loop
+  done
+else
+  _run_with_optional_omp_thread_loop
 fi
