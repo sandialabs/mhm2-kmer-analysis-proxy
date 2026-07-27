@@ -51,6 +51,7 @@
 #include "gpu-utils/gpu_common.hpp"
 #include "gpu-utils/gpu_utils.hpp"
 #include "parse_and_pack.hpp"
+#include "kcount_pipeline_timer.hpp"
 
 using namespace std;
 using namespace gpu_common;
@@ -279,6 +280,7 @@ kcount_gpu::ParseAndPackGPUDriver::~ParseAndPackGPUDriver() {
 }
 
 bool kcount_gpu::ParseAndPackGPUDriver::process_seq_block(const string &seqs, unsigned int &num_valid_kmers) {
+  KCOUNT_PIPELINE_TIMER_NAMED("ParseAndPackGPUDriver::process_seq_block");
   QuickTimer func_timer, kernel_timer;
 
   if (seqs.length() >= KCOUNT_SEQ_BLOCK_SIZE) return false;
@@ -319,6 +321,7 @@ bool kcount_gpu::ParseAndPackGPUDriver::process_seq_block(const string &seqs, un
 }
 
 void kcount_gpu::ParseAndPackGPUDriver::pack_seq_block(const string &seqs) {
+  KCOUNT_PIPELINE_TIMER_NAMED("ParseAndPackGPUDriver::pack_seq_block");
   gpu_utils::set_gpu_device(dstate->rank_me);
   int packed_seqs_len = (seqs.length() + 1) / 2;
   ERROR_CHECK(Memcpy(dev_seqs, &seqs[0], seqs.length(), MemcpyHostToDevice));

@@ -55,6 +55,7 @@
 #include "gpu_hash_table.hpp"
 #include "prime.hpp"
 #include "gpu_hash_funcs.hpp"
+#include "kcount_pipeline_timer.hpp"
 #ifdef USE_TCF
 #include "tcf_wrapper.hpp"
 #else
@@ -524,6 +525,7 @@ HashTableGPUDriver<MAX_K>::HashTableGPUDriver() {}
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::init(int upcxx_rank_me, int upcxx_rank_n, int kmer_len, size_t max_elems, size_t max_ctg_elems,
                                      size_t num_errors, size_t gpu_avail_mem, string &msgs, string &warnings, bool use_qf) {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::init");
   this->upcxx_rank_me = upcxx_rank_me;
   this->upcxx_rank_n = upcxx_rank_n;
   this->kmer_len = kmer_len;
@@ -627,6 +629,7 @@ void HashTableGPUDriver<MAX_K>::init(int upcxx_rank_me, int upcxx_rank_n, int km
 
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::init_ctg_kmers(uint64_t max_elems, size_t gpu_avail_mem) {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::init_ctg_kmers");
   pass_type = CTG_KMERS_PASS;
   // free up space
   if (dstate->tcf) two_choice_filter::TCF::free_on_device(dstate->tcf);
@@ -656,6 +659,7 @@ HashTableGPUDriver<MAX_K>::~HashTableGPUDriver() {
 
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::insert_supermer_block() {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::insert_supermer_block");
   dstate->insert_timer.start();
   bool is_ctg_kmers = (pass_type == CTG_KMERS_PASS);
   ERROR_CHECK(Memcpy(packed_elem_buff_dev.seqs, elem_buff_host.seqs, buff_len, MemcpyHostToDevice));
@@ -682,6 +686,7 @@ void HashTableGPUDriver<MAX_K>::insert_supermer_block() {
 
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::insert_supermer(const string &supermer_seq, count_t supermer_count) {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::insert_supermer");
   if (buff_len + supermer_seq.length() + 1 >= KCOUNT_GPU_HASHTABLE_BLOCK_SIZE) {
     insert_supermer_block();
     buff_len = 0;
@@ -698,6 +703,7 @@ void HashTableGPUDriver<MAX_K>::insert_supermer(const string &supermer_seq, coun
 
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::purge_invalid(uint64_t &num_purged, uint64_t &num_entries) {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::purge_invalid");
   num_purged = num_entries = 0;
   uint64_t *counts_gpu;
   constexpr int NUM_COUNTS = 2;
@@ -727,6 +733,7 @@ void HashTableGPUDriver<MAX_K>::purge_invalid(uint64_t &num_purged, uint64_t &nu
 
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::flush_inserts() {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::flush_inserts");
   if (buff_len) {
     insert_supermer_block();
     buff_len = 0;
@@ -737,6 +744,7 @@ void HashTableGPUDriver<MAX_K>::flush_inserts() {
 
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::done_all_inserts(uint64_t &num_dropped, uint64_t &num_unique, uint64_t &num_purged) {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::done_all_inserts");
   uint64_t num_entries = 0;
   purge_invalid(num_purged, num_entries);
   read_kmers_dev.num = num_entries;
@@ -789,6 +797,7 @@ void HashTableGPUDriver<MAX_K>::done_all_inserts(uint64_t &num_dropped, uint64_t
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::done_ctg_kmer_inserts(uint64_t &attempted_inserts, uint64_t &dropped_inserts,
                                                       uint64_t &new_inserts) {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::done_ctg_kmer_inserts");
   uint64_t *counts_gpu;
   constexpr int NUM_COUNTS = 3;
   ERROR_CHECK(Malloc(&counts_gpu, NUM_COUNTS * sizeof(uint64_t)));

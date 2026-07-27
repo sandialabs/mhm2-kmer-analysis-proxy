@@ -50,6 +50,7 @@
 // #include "gpu-utils/gpu_compatibility.hpp"
 // #include "gpu-utils/gpu_utils.hpp"
 #include "kokkos_pnp.hpp"
+#include "kcount_pipeline_timer.hpp"
 
 #include <Kokkos_Core.hpp>
 
@@ -202,6 +203,7 @@ KOKKOS_FUNCTION uint64_t gpu_minimizer_hash_fast(int m, int kmer_len, int num_lo
 void parse_and_pack(Kokkos::View<char *> seqs, int minimizer_len, int kmer_len, int num_longs, int seqs_len,
                     Kokkos::View<int *> kmer_targets_v, int num_ranks, Kokkos::View<uint64_t[256]> twins_v,
                     Kokkos::View<uint64_t[32]> mask_v) {
+  KCOUNT_PIPELINE_TIMER_NAMED("parse_and_pack");
   int num_kmers = seqs_len - kmer_len + 1;
   const int MAX_LONGS = (MAX_BUILD_KMER + 31) / 32;
 
@@ -225,6 +227,7 @@ KOKKOS_INLINE_FUNCTION bool is_valid_base(char base) { return (base != '_' && ba
 void build_supermers(Kokkos::View<char *> seqs_v, Kokkos::View<int *> kmer_targets_v, unsigned int num_kmers, int kmer_len,
                      int seqs_len, Kokkos::View<kcount_gpu::SupermerInfo *> supermers_v, Kokkos::View<unsigned int> num_supermers_v,
                      unsigned int &num_valid_kmers, int rank_me) {
+  KCOUNT_PIPELINE_TIMER_NAMED("build_supermers");
   // builds a single supermer starting at a given kmer, but only if the kmer is a valid start to a supermer
 
   // reduce(my_valid_kmers, num_kmers, num_valid_kmers);
@@ -299,6 +302,7 @@ KOKKOS_INLINE_FUNCTION uint8_t get_packed_val(char base) {
 }
 
 void pack_seqs(Kokkos::View<char *> dev_seqs_v, Kokkos::View<char *> dev_packed_seqs_v, int seqs_len) {
+  KCOUNT_PIPELINE_TIMER_NAMED("pack_seqs");
   int packed_seqs_len = (seqs_len + 1) / 2;
   Kokkos::parallel_for(
       "pack_seqs", packed_seqs_len, KOKKOS_LAMBDA(int i) {
@@ -362,6 +366,7 @@ kcount_gpu::ParseAndPackGPUDriver::ParseAndPackGPUDriver(int upcxx_rank_me, int 
 kcount_gpu::ParseAndPackGPUDriver::~ParseAndPackGPUDriver() {}
 
 bool kcount_gpu::ParseAndPackGPUDriver::process_seq_block(const string &seqs, unsigned int &num_valid_kmers) {
+  KCOUNT_PIPELINE_TIMER_NAMED("ParseAndPackGPUDriver::process_seq_block");
   if (seqs.length() >= KCOUNT_SEQ_BLOCK_SIZE) return false;
   if (seqs.length() == 0) return false;
   if (seqs.length() < (unsigned int)kmer_len) return false;
@@ -400,6 +405,7 @@ bool kcount_gpu::ParseAndPackGPUDriver::process_seq_block(const string &seqs, un
 }
 
 void kcount_gpu::ParseAndPackGPUDriver::pack_seq_block(const string &seqs) {
+  KCOUNT_PIPELINE_TIMER_NAMED("ParseAndPackGPUDriver::pack_seq_block");
   int packed_seqs_len = (seqs.length() + 1) / 2;
 
   pack_seqs(dev_seqs_v, dev_packed_seqs_v, seqs.length());

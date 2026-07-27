@@ -57,6 +57,7 @@
 #include "kokkos_gpu_ht.hpp"
 #include "prime.hpp"
 #include "kokkos_gpu_hash_funcs.hpp"
+#include "kcount_pipeline_timer.hpp"
 
 #ifdef USE_TCF
 #include "tcf_wrapper.hpp"
@@ -205,6 +206,7 @@ void gpu_merge_ctg_kmers(KmerCountsMap<MAX_K> read_kmers, const KmerCountsMap<MA
 
 template <int MAX_K>
 void gpu_compact_ht(KmerCountsMap<MAX_K> elems, KmerExtsMap<MAX_K> compact_elems, uint64_t &num_purged, uint64_t &num_entries) {
+  KCOUNT_PIPELINE_TIMER_NAMED("gpu_compact_ht");
   const int N_LONGS = KmerArray<MAX_K>::N_LONGS;
   uint64_t dropped_inserts = 0;
   uint64_t unique_inserts = 0;
@@ -260,6 +262,7 @@ void gpu_compact_ht(KmerCountsMap<MAX_K> elems, KmerExtsMap<MAX_K> compact_elems
 
 template <int MAX_K>
 void gpu_purge_invalid(KmerCountsMap<MAX_K> elems, uint64_t &num_purged, uint64_t &num_entries) {
+  KCOUNT_PIPELINE_TIMER_NAMED("gpu_purge_invalid");
   int N_LONGS = KmerArray<MAX_K>::N_LONGS;
 
   const uint64_t KEY_EMPTY = 0xffffffffffffffff;
@@ -312,6 +315,7 @@ KOKKOS_INLINE_FUNCTION char to_base_func(int index, int pp) {
 }
 
 void gpu_unpack_supermer_block(SupermerBuff unpacked_supermer_buff, SupermerBuff packed_supermer_buff, int buff_len) {
+  KCOUNT_PIPELINE_TIMER_NAMED("gpu_unpack_supermer_block");
   // Match the original CUDA kernel launch semantics: launch over buff_len and
   // let the '_' sentinel exit early inside the kernel.
   Kokkos::parallel_for(
@@ -573,6 +577,7 @@ template <int MAX_K>
 void gpu_insert_supermer_block(KmerCountsMap<MAX_K> elems, SupermerBuff supermer_buff, uint32_t buff_len, int kmer_len,
                                bool ctg_kmers, InsertStats &insert_stats, two_choice_filter::TCF *tcf,
                                Kokkos::View<uint64_t[256]> twins_v) {
+  KCOUNT_PIPELINE_TIMER_NAMED("gpu_insert_supermer_block");
   const uint64_t KEY_EMPTY = 0xffffffffffffffff;
   const uint64_t KEY_TRANSITION = 0xfffffffffffffffe;
   const int N_LONGS = KmerArray<MAX_K>::N_LONGS;
@@ -718,6 +723,7 @@ HashTableGPUDriver<MAX_K>::HashTableGPUDriver() {}
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::init(int upcxx_rank_me, int upcxx_rank_n, int kmer_len, size_t max_elems, size_t max_ctg_elems,
                                      size_t num_errors, size_t gpu_avail_mem, string &msgs, string &warnings, bool use_qf) {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::init");
   this->upcxx_rank_me = upcxx_rank_me;
   this->upcxx_rank_n = upcxx_rank_n;
   this->kmer_len = kmer_len;
@@ -877,6 +883,7 @@ HashTableGPUDriver<MAX_K>::~HashTableGPUDriver() {
 
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::insert_supermer_block() {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::insert_supermer_block");
   bool is_ctg_kmers = (pass_type == CTG_KMERS_PASS);
 
   Kokkos::deep_copy(packed_elem_buff_dev.seqs_v, elem_buff_host.h_seqs_v);
@@ -905,6 +912,7 @@ void HashTableGPUDriver<MAX_K>::insert_supermer_block() {
 
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::insert_supermer(const string &supermer_seq, count_t supermer_count) {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::insert_supermer");
   if (buff_len + supermer_seq.length() + 1 >= KCOUNT_GPU_HASHTABLE_BLOCK_SIZE) {
     insert_supermer_block();
     buff_len = 0;
@@ -924,6 +932,7 @@ void HashTableGPUDriver<MAX_K>::insert_supermer(const string &supermer_seq, coun
 
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::purge_invalid(uint64_t &num_purged, uint64_t &num_entries) {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::purge_invalid");
   num_purged = num_entries = 0;
 
   // now purge all invalid kmers (do it on the gpu)
@@ -940,6 +949,7 @@ void HashTableGPUDriver<MAX_K>::purge_invalid(uint64_t &num_purged, uint64_t &nu
 
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::flush_inserts() {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::flush_inserts");
   if (buff_len) {
     insert_supermer_block();
     buff_len = 0;
@@ -950,6 +960,7 @@ void HashTableGPUDriver<MAX_K>::flush_inserts() {
 
 template <int MAX_K>
 void HashTableGPUDriver<MAX_K>::done_all_inserts(uint64_t &num_dropped, uint64_t &num_unique, uint64_t &num_purged) {
+  KCOUNT_PIPELINE_TIMER_NAMED("HashTableGPUDriver::done_all_inserts");
   uint64_t num_entries = 0;
   purge_invalid(num_purged, num_entries);
   read_kmers_dev.num = num_entries;

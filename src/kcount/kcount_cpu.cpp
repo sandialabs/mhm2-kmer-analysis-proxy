@@ -44,6 +44,7 @@
 #include "kcount.hpp"
 #include "kmer_dht.hpp"
 #include "prime.hpp"
+#include "kcount_pipeline_timer.hpp"
 
 using namespace std;
 using namespace upcxx;
@@ -72,6 +73,7 @@ SeqBlockInserter<MAX_K>::~SeqBlockInserter() {
 
 template <int MAX_K>
 void SeqBlockInserter<MAX_K>::process_seq(string &seq, kmer_count_t depth, dist_object<KmerDHT<MAX_K>> &kmer_dht) {
+  KCOUNT_PIPELINE_TIMER();
   if (!depth) depth = 1;
   auto kmer_len = Kmer<MAX_K>::get_k();
   Kmer<MAX_K>::get_kmers(kmer_len, seq, state->kmers);
@@ -104,6 +106,7 @@ void SeqBlockInserter<MAX_K>::process_seq(string &seq, kmer_count_t depth, dist_
 
 template <int MAX_K>
 void SeqBlockInserter<MAX_K>::done_processing(dist_object<KmerDHT<MAX_K>> &kmer_dht) {
+  KCOUNT_PIPELINE_TIMER();
   auto tot_supermers_bytes_sent = reduce_one(state->bytes_supermers_sent, op_fast_add, 0).wait();
   auto tot_kmers_bytes_sent = reduce_one(state->bytes_kmers_sent, op_fast_add, 0).wait();
   SLOG_CPU_HT("Total bytes sent in compressed supermers ", get_size_str(tot_supermers_bytes_sent), " (compression is ", fixed,
@@ -307,6 +310,7 @@ class KmerMapExts {
 
 template <int MAX_K>
 static void get_kmers_and_exts(Supermer &supermer, vector<KmerAndExt<MAX_K>> &kmers_and_exts) {
+  KCOUNT_PIPELINE_TIMER();
   vector<bool> quals;
   quals.resize(supermer.seq.length());
   for (int i = 0; i < supermer.seq.length(); i++) {
@@ -337,6 +341,7 @@ static void get_kmers_and_exts(Supermer &supermer, vector<KmerAndExt<MAX_K>> &km
 
 template <int MAX_K>
 static void insert_supermer_from_read(Supermer &supermer, dist_object<KmerMapExts<MAX_K>> &kmers) {
+  KCOUNT_PIPELINE_TIMER();
   auto kmer_len = Kmer<MAX_K>::get_k();
   vector<KmerAndExt<MAX_K>> kmers_and_exts;
   kmers_and_exts.reserve(supermer.seq.length() - kmer_len);
@@ -356,6 +361,7 @@ static void insert_supermer_from_read(Supermer &supermer, dist_object<KmerMapExt
 
 template <int MAX_K>
 static void insert_supermer_from_ctg(Supermer &supermer, dist_object<KmerMapExts<MAX_K>> &kmers) {
+  KCOUNT_PIPELINE_TIMER();
   auto kmer_len = Kmer<MAX_K>::get_k();
   vector<KmerAndExt<MAX_K>> kmers_and_exts;
   kmers_and_exts.reserve(supermer.seq.length() - kmer_len);
@@ -426,6 +432,7 @@ HashTableInserter<MAX_K>::~HashTableInserter() {
 
 template <int MAX_K>
 void HashTableInserter<MAX_K>::init(size_t max_elems, size_t max_ctg_elems, size_t num_errors, bool use_qf) {
+  KCOUNT_PIPELINE_TIMER();
   state = new HashTableInserterState();
   state->using_ctg_kmers = false;
   double free_mem = get_free_mem(true);
@@ -471,11 +478,13 @@ void HashTableInserter<MAX_K>::init(size_t max_elems, size_t max_ctg_elems, size
 
 template <int MAX_K>
 void HashTableInserter<MAX_K>::init_ctg_kmers(size_t max_elems) {
+  KCOUNT_PIPELINE_TIMER();
   state->using_ctg_kmers = true;
 }
 
 template <int MAX_K>
 void HashTableInserter<MAX_K>::insert_supermer(const std::string &supermer_seq, kmer_count_t supermer_count) {
+  KCOUNT_PIPELINE_TIMER();
   Supermer supermer = {.seq = supermer_seq, .count = supermer_count};
   state->kernel_timer.start();
   for (int i = 0; i < supermer.seq.length(); i++) {
@@ -494,6 +503,7 @@ void HashTableInserter<MAX_K>::insert_supermer(const std::string &supermer_seq, 
 
 template <int MAX_K>
 void HashTableInserter<MAX_K>::flush_inserts() {
+  auto _kct_t0 = std::chrono::steady_clock::now();
   int64_t tot_num_kmers = reduce_one(state->kmers->size(), op_fast_add, 0).wait();
   SLOG_CPU_HT("After inserting ", state->using_ctg_kmers ? "ctg kmers" : "read kmers", " in hash table:\n");
   SLOG_CPU_HT("  Number of elements: ", tot_num_kmers, "\n");
@@ -518,10 +528,17 @@ void HashTableInserter<MAX_K>::flush_inserts() {
   auto avg_kmers_processed = reduce_one(state->kmers->size(), op_fast_add, 0).wait() / rank_n();
   auto max_kmers_processed = reduce_one(state->kmers->size(), op_fast_max, 0).wait();
   SLOG_CPU_HT("  Avg kmers per rank ", avg_kmers_processed, " (balance ", (double)avg_kmers_processed / max_kmers_processed, ")\n");
+
+  // End-of-pass report: covers process_seq / insert_supermer / helpers accumulated during this pass.
+  kcount_timing::add("flush_inserts", _kct_t0);
+  if (kcount_timing::enabled() && !rank_me())
+    std::cerr << kcount_timing::report_and_reset(std::string("kcount_cpu ") +
+                                                 (state->using_ctg_kmers ? "ctg" : "read") + " insert pass");
 }
 
 template <int MAX_K>
 double HashTableInserter<MAX_K>::insert_into_local_hashtable(dist_object<KmerMap<MAX_K>> &local_kmers) {
+  auto _kct_t0 = std::chrono::steady_clock::now();
   BarrierTimer timer(__FILEFUNC__);
   int64_t num_good_kmers = state->kmers->size();
   int64_t max_kmer_counts = 0;
@@ -597,6 +614,9 @@ double HashTableInserter<MAX_K>::insert_into_local_hashtable(dist_object<KmerMap
 
   SLOG_CPU_HT("Total kmer count sum: ", all_sum_kmer_counts, "\n");
 
+  kcount_timing::add("insert_into_local_hashtable", _kct_t0);
+  if (kcount_timing::enabled() && !rank_me())
+    std::cerr << kcount_timing::report_and_reset("kcount_cpu compact (insert_into_local_hashtable)");
   return avg_kmer_count;
 }
 

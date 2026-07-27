@@ -44,6 +44,7 @@
 #include "kcount.hpp"
 #include "kmer_dht.hpp"
 #include "devices_gpu.hpp"
+#include "kcount_pipeline_timer.hpp"
 
 #ifndef ENABLE_KOKKOS
 #include "kcount-gpu/parse_and_pack.hpp"
@@ -109,6 +110,7 @@ SeqBlockInserter<MAX_K>::~SeqBlockInserter() {
 
 template <int MAX_K>
 static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_object<KmerDHT<MAX_K>> &kmer_dht) {
+  KCOUNT_PIPELINE_TIMER();
   unsigned int num_valid_kmers = 0;
   auto state = seq_block_inserter->state;
   bool from_ctgs = !state->depth_block.empty();
@@ -159,6 +161,7 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
 
   template <int MAX_K>
   void SeqBlockInserter<MAX_K>::process_seq(string & seq, kmer_count_t depth, dist_object<KmerDHT<MAX_K>> & kmer_dht) {
+    KCOUNT_PIPELINE_TIMER();
     if (seq.length() >= KCOUNT_SEQ_BLOCK_SIZE)
       DIE("Oh dear, my laziness is revealed: the ctg seq is too long ", seq.length(), " for this GPU implementation ",
           KCOUNT_SEQ_BLOCK_SIZE);
@@ -174,6 +177,7 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
 
   template <int MAX_K>
   void SeqBlockInserter<MAX_K>::done_processing(dist_object<KmerDHT<MAX_K>> & kmer_dht) {
+    KCOUNT_PIPELINE_TIMER();
     if (kmer_dht->using_ctg_kmers) {
       DBG("in done_processing with seq_block empty? ", state->seq_block.empty(), "\n");
       // WARN("in done_processing with seq_block empty? ", state->seq_block.empty(), "\n");
@@ -216,6 +220,7 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
 
   template <int MAX_K>
   void HashTableInserter<MAX_K>::init(size_t max_elems, size_t max_ctg_elems, size_t num_errors, bool use_qf) {
+    KCOUNT_PIPELINE_TIMER();
     barrier(local_team());
 #ifdef USE_TCF
     // this->use_qf = use_qf;
@@ -261,6 +266,7 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
 
   template <int MAX_K>
   void HashTableInserter<MAX_K>::init_ctg_kmers(size_t max_elems) {
+    KCOUNT_PIPELINE_TIMER();
     // barrier(local_team());
     // assert(state != nullptr);
     // auto init_gpu_mem = gpu_utils::get_gpu_avail_mem();
@@ -279,12 +285,14 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
 
   template <int MAX_K>
   void HashTableInserter<MAX_K>::insert_supermer(const std::string &supermer_seq, kmer_count_t supermer_count) {
+    KCOUNT_PIPELINE_TIMER();
     assert(state != nullptr);
     state->ht_gpu_driver.insert_supermer(supermer_seq, supermer_count);
   }
 
   template <int MAX_K>
   void HashTableInserter<MAX_K>::flush_inserts() {
+    auto _kct_t0 = std::chrono::steady_clock::now();
     state->ht_gpu_driver.flush_inserts();
     auto &pr = upcxx_utils::Timings::get_promise_reduce();
     auto fut_avg_num_gpu_calls =
@@ -354,6 +362,13 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
                      });
     upcxx_utils::Timings::set_pending(fut_report);
     upcxx_utils::Timings::wait_pending();
+
+    // End-of-pass report: covers process_block / process_seq / insert_supermer accumulated during this pass.
+    kcount_timing::add("flush_inserts", _kct_t0);
+    if (kcount_timing::enabled() && !rank_me())
+      std::cerr << kcount_timing::report_and_reset(
+          std::string("kcount_gpu ") +
+          (state->ht_gpu_driver.pass_type == kcount_gpu::CTG_KMERS_PASS ? "ctg" : "read") + " insert pass");
   }
 
   template <int MAX_K>
@@ -363,6 +378,7 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
 
   template <int MAX_K>
   double HashTableInserter<MAX_K>::insert_into_local_hashtable(dist_object<KmerMap<MAX_K>> & local_kmers) {
+    auto _kct_t0 = std::chrono::steady_clock::now();
     barrier();
     IntermittentTimer insert_timer("gpu insert to cpu timer");
     insert_timer.start();
@@ -494,8 +510,10 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
     SLOG_GPU("  kernel: ", fixed, setprecision(3), avg_gpu_kernel_time, " avg, ", max_gpu_kernel_time, " max\n");
     barrier();
     LOG_MEM("After insert_into_local_hashtable inserts");
+    kcount_timing::add("insert_into_local_hashtable", _kct_t0);
+    if (kcount_timing::enabled() && !rank_me())
+      std::cerr << kcount_timing::report_and_reset("kcount_gpu compact (insert_into_local_hashtable)");
     return avg_kmer_count;
-    return 0;
   }
 
 #define seq_block_inserter_K(KMER_LEN) template struct SeqBlockInserter<KMER_LEN>;
