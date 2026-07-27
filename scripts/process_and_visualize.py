@@ -514,8 +514,8 @@ def plot_results(data: pd.DataFrame, title: str, output: Optional[Path], show: b
         err_kws={"color": PIPELINE_ERR_COLOR, "linewidth": ERRORBAR_LINEWIDTH},
         ax=ax_pipeline,
     )
-    ax_pipeline.set_xlabel("Number of ranks")
-    ax_pipeline.set_ylabel("Pipeline timing (seconds)", color=PIPELINE_COLOR)
+    ax_pipeline.set_xlabel("UPC++ Ranks")
+    ax_pipeline.set_ylabel("Runtime(sec)", color=PIPELINE_COLOR)
     ax_pipeline.tick_params(axis="y", labelcolor=PIPELINE_COLOR)
     ax_pipeline.set_title(title)
     ax_pipeline.set_axisbelow(True)
@@ -614,8 +614,8 @@ def plot_compare_results(
         err_kws={"linewidth": ERRORBAR_LINEWIDTH},
         ax=ax,
     )
-    ax.set_xlabel("Number of ranks")
-    ax.set_ylabel("Pipeline timing (seconds)")
+    ax.set_xlabel("UPC++ Ranks")
+    ax.set_ylabel("Runtime(sec)")
     ax.set_title(title)
     ax.set_axisbelow(True)
     ax.grid(
