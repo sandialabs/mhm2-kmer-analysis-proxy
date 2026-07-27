@@ -59,9 +59,14 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--results-group",
+        default=None,
+        help="Only search batch dirs under results/<GROUP>/ (e.g. MI300, H100)",
+    )
+    parser.add_argument(
         "--backend",
         default=None,
-        help="Only include runs for this backend (e.g. HIP), matched from directory names",
+        help="Only include runs for this backend (e.g. HIP), detected from mhm2.log when present",
     )
     parser.add_argument(
         "--output",
@@ -90,13 +95,11 @@ def _is_batch_dir(path: Path) -> bool:
     return False
 
 
-def iter_batch_dirs(root: Path) -> List[Path]:
-    """Find batch dirs under results/, including results/<BACKEND>/results_*.
-
-    Supports both legacy flat layout (results/results_*) and backend-grouped
-    layout (results/CPU/results_*, results/CUDA/results_*, ...).
-    """
+def iter_batch_dirs(root: Path, results_group: Optional[str] = None) -> List[Path]:
+    """Find batch dirs under results/, including results/<GROUP>/results_*."""
     results_root = root / "results"
+    if results_group:
+        results_root = results_root / results_group
     if not results_root.is_dir():
         return []
 
@@ -142,6 +145,39 @@ def normalize_kokkos_use(value: str) -> str:
     if value.startswith("KOKKOS_"):
         return value
     return f"KOKKOS_{value}"
+
+
+def detect_backend_from_log(run_dir: Path) -> Optional[str]:
+    log_path = run_dir / "mhm2.log"
+    if not log_path.is_file():
+        return None
+    try:
+        with log_path.open(encoding="utf-8", errors="ignore") as handle:
+            for line in handle:
+                if "ENABLE_HIP=ON" in line:
+                    return "HIP"
+                if "ENABLE_CUDA=ON" in line:
+                    return "CUDA"
+    except OSError:
+        return None
+    return None
+
+
+def resolve_backend(run_dir: Path, dir_backend: str) -> str:
+    return detect_backend_from_log(run_dir) or dir_backend
+
+
+def output_dir_matches_backend(
+    output_dir: Path,
+    dir_backend: str,
+    backend: Optional[str],
+) -> bool:
+    if not backend:
+        return True
+    for _, csv_path in iter_run_csvs(output_dir):
+        if resolve_backend(csv_path.parent, dir_backend) == backend:
+            return True
+    return False
 
 
 def display_impl_label(kokkos_use: str, backend: Optional[str] = None) -> str:
@@ -254,18 +290,21 @@ def merge_csv_files(
         run_kokkos_label = normalize_kokkos_use(run_kokkos)
         if kokkos_use and run_kokkos_label != normalize_kokkos_use(kokkos_use):
             continue
-        if backend and run_backend != backend:
+        if not output_dir_matches_backend(output_dir, run_backend, backend):
             continue
 
         ranks = int(ranks_str)
         for run_idx, csv_path in iter_run_csvs(output_dir):
+            actual_backend = resolve_backend(csv_path.parent, run_backend)
+            if backend and actual_backend != backend:
+                continue
             append_result_row(
                 rows,
                 csv_path,
                 run_idx,
                 ranks,
                 run_kokkos_label,
-                run_backend,
+                actual_backend,
                 csv_path.parent,
                 root,
             )
@@ -327,7 +366,7 @@ def batch_has_kokkos_config(
         run_kokkos, run_backend, _ = match.groups()
         if normalize_kokkos_use(run_kokkos) != normalize_kokkos_use(kokkos_use):
             continue
-        if backend and run_backend != backend:
+        if not output_dir_matches_backend(output_dir, run_backend, backend):
             continue
         return True
 
@@ -355,9 +394,13 @@ def load_batch_data(
     return data.sort_values(sort_cols).reset_index(drop=True)
 
 
-def load_compare_results(root: Path, backend: Optional[str] = None) -> pd.DataFrame:
+def load_compare_results(
+    root: Path,
+    backend: Optional[str] = None,
+    results_group: Optional[str] = None,
+) -> pd.DataFrame:
     batch_dirs = sorted(
-        iter_batch_dirs(root),
+        iter_batch_dirs(root, results_group),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
@@ -652,11 +695,14 @@ def main() -> None:
         sys.exit("Use either --compare or --kokkos-use, not both.")
 
     if args.compare:
-        data = load_compare_results(root, args.backend)
+        results_scope = root / "results"
+        if args.results_group:
+            results_scope = results_scope / args.results_group
+        data = load_compare_results(root, args.backend, args.results_group)
         if data.empty:
             sys.exit(
                 f"No {SUMMARY_CSV_NAME} files found for both KOKKOS_ON and KOKKOS_OFF "
-                f"under {root / 'results'}"
+                f"under {results_scope}"
             )
         if "kokkos_use" in data.columns and data["kokkos_use"].nunique() > 1:
             title = "MHM2 Kmer Analysis Proxy"
