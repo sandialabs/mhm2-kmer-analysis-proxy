@@ -1,0 +1,475 @@
+2026-07-29 09:01:28 init_logger took 0.00 s at 07/29/26 09:01:28 (0.01 s for io)
+2026-07-29 09:01:28 MHM2 version 2.2.0.0.mhm2-kmer-analysis-proxy-v0.9.0-43-g18f6e6db-dirty-main with upcxx-utils 0.4.0.153-gba9cc27-dirty built on 20260729_083418
+2026-07-29 09:01:28 _________________________
+2026-07-29 09:01:28 Compiler definitions:
+2026-07-29 09:01:28   CMAKE_BUILD_TYPE=Release
+2026-07-29 09:01:28   ENABLE_CUDA=OFF
+2026-07-29 09:01:28   ENABLE_HIP=OFF
+2026-07-29 09:01:28   COMPILE_OPTIONS=
+2026-07-29 09:01:28   CMAKE_CXX_FLAGS=-Wall
+2026-07-29 09:01:28   -Wno-deprecated-declarations
+2026-07-29 09:01:28   -mmmx
+2026-07-29 09:01:28   -mavx
+2026-07-29 09:01:28   -msse
+2026-07-29 09:01:28   -msse2
+2026-07-29 09:01:28   -mfma
+2026-07-29 09:01:28   -mssse3
+2026-07-29 09:01:28   -mavx2
+2026-07-29 09:01:28   -Wall
+2026-07-29 09:01:28   -Wno-reorder
+2026-07-29 09:01:28   -Wno-sign-compare
+2026-07-29 09:01:28   -Wno-unused-function
+2026-07-29 09:01:28   CMAKE_CXX_FLAGS_RELEASE=-O3
+2026-07-29 09:01:28   -DNDEBUG
+2026-07-29 09:01:28   MAX_BUILD_KMER=128
+2026-07-29 09:01:28   _XOPEN_SOURCE=700
+2026-07-29 09:01:28   MERGE_READS_TRIM_WITH_SSW
+2026-07-29 09:01:28   BASE_ERROR_RATE=0.005
+2026-07-29 09:01:28   KCOUNT_QUAL_CUTOFF=20
+2026-07-29 09:01:28   KCOUNT_KMER_CACHE_FRACTION=0.2
+2026-07-29 09:01:28   KCOUNT_KMER_CACHE_MAX_LOAD=0.8
+2026-07-29 09:01:28   KCOUNT_SEQ_BLOCK_SIZE=3000000
+2026-07-29 09:01:28   KCOUNT_GPU_HASHTABLE_BLOCK_SIZE=1000000
+2026-07-29 09:01:28   KCOUNT_MAX_KMER_COUNT=10000
+2026-07-29 09:01:28   KCOUNT_HT_MAX_PROBE=100
+2026-07-29 09:01:28   DYN_MIN_DEPTH=0.9
+2026-07-29 09:01:28   MINIMIZER_LEN=15
+2026-07-29 09:01:28   CONFIG_USE_COLORS
+2026-07-29 09:01:28   USE_BYTELL
+2026-07-29 09:01:28   SHUFFLE_KMER_LEN=31
+2026-07-29 09:01:28   KLIGN_MAX_ALNS_PER_READ=50
+2026-07-29 09:01:28   KLIGN_SEED_SPACE=8
+2026-07-29 09:01:28   KLIGN_UNALIGNED_THRES=1
+2026-07-29 09:01:28   KLIGN_ALN_IDENTITY_CUTOFF=95
+2026-07-29 09:01:28   KLIGN_GPU_BLOCK_SIZE=5000
+2026-07-29 09:01:28   KLIGN_RGET_BUF_SIZE=10000
+2026-07-29 09:01:28   KLIGN_MAX_RPC_MESSAGE_SIZE=256000
+2026-07-29 09:01:28   KLIGN_MAX_MEM_PCT=10
+2026-07-29 09:01:28   KLIGN_MAX_CTGS_PER_KMER=500
+2026-07-29 09:01:28   KLIGN_MAX_IRREGULAR_RGET=8128
+2026-07-29 09:01:28   CGRAPH_DEPTH_DIFF_THRES=0.1
+2026-07-29 09:01:28   CGRAPH_MAX_DEPTH_DIFF=15
+2026-07-29 09:01:28   CGRAPH_MIN_DEPTH_DIFF=5
+2026-07-29 09:01:28   CGRAPH_MAX_SEARCH_LEVEL=5
+2026-07-29 09:01:28   CGRAPH_MAX_QUEUE_SIZE=100
+2026-07-29 09:01:28   CGRAPH_MAX_CACHE_SIZE=2000000
+2026-07-29 09:01:28   CGRAPH_MAX_DEGREE=100
+2026-07-29 09:01:28   CGRAPH_WALK_SUPPORT_THRES=3
+2026-07-29 09:01:28   CGRAPH_GAP_CLOSING_OVERLAP_MISMATCH_THRES=1
+2026-07-29 09:01:28   CGRAPH_SPAN_OVERLAP_MISMATCH_THRES=1
+2026-07-29 09:01:28   CGRAPH_MAX_MISMATCHES_THRES=3
+2026-07-29 09:01:28   CGRAPH_MIN_TNF_CLEN=1000
+2026-07-29 09:01:28   CGRAPH_WALK_TNF_THRES=0.75
+2026-07-29 09:01:28   BLASTN_ALN_SCORES=23521
+2026-07-29 09:01:28   ALTERNATE_ALN_SCORES=11111
+2026-07-29 09:01:28   LASSM_MAX_KMER_LEN=121
+2026-07-29 09:01:28   LASSM_MIN_KMER_LEN=21
+2026-07-29 09:01:28   LASSM_SHIFT_SIZE=8
+2026-07-29 09:01:28   LASSM_MIN_QUAL=10
+2026-07-29 09:01:28   LASSM_MIN_HI_QUAL=20
+2026-07-29 09:01:28   LASSM_MIN_VIABLE_DEPTH=0.2
+2026-07-29 09:01:28   LASSM_MIN_EXPECTED_DEPTH=0.3
+2026-07-29 09:01:28   LASSM_RATING_THRES=0
+2026-07-29 09:01:28   LASSM_MAX_COUNT_MERS_READS=3000
+2026-07-29 09:01:28   POST_ASM_ALN_SEED_SPACE=16
+2026-07-29 09:01:28   POST_ASM_ALN_K=17
+2026-07-29 09:01:28   POST_ASM_MIN_IDENT=50
+2026-07-29 09:01:28   USE_PACKED_READS_LINEAR_ALLOCATOR=1
+2026-07-29 09:01:28 _________________________
+2026-07-29 09:01:28 Options:
+2026-07-29 09:01:28   reads =                  []
+2026-07-29 09:01:28   paired-reads =           /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq
+2026-07-29 09:01:28   unpaired-reads =         []
+2026-07-29 09:01:28   kmer-lens =              21
+2026-07-29 09:01:28   output =                 /home/jciesko/RAndD/jciesko_workspace/mhm2-kmer-analysis-proxy/results/CPU/results_20260729_084911_76074d20/KOKKOS_OFF_CPU_ranks_8/run_01
+2026-07-29 09:01:28   insert =                 [0,0]
+2026-07-29 09:01:28   min-depth-thres =        2
+2026-07-29 09:01:28   optimize =               default
+2026-07-29 09:01:28   max-kmer-store =         0
+2026-07-29 09:01:28   max-rpcs-in-flight =     100
+2026-07-29 09:01:28   max-worker-threads =     3
+2026-07-29 09:01:28   pin =                    none
+2026-07-29 09:01:28   sequencing-depth =       4
+2026-07-29 09:01:28   subsample-pct =          100
+2026-07-29 09:01:28   quality-offset =         33
+2026-07-29 09:01:28 _________________________
+2026-07-29 09:01:28 Starting run with 8 processes on 1 node at 07/29/26 09:01:28
+2026-07-29 09:01:28 Executed as: /home/jciesko/RAndD/jciesko_workspace/mhm2-kmer-analysis-proxy/install_CPU_KOKKOS_OFF/bin/mhm2.py --pin=none --paired-reads /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq --output /home/jciesko/RAndD/jciesko_workspace/mhm2-kmer-analysis-proxy/results/CPU/results_20260729_084911_76074d20/KOKKOS_OFF_CPU_ranks_8/run_01
+2026-07-29 09:01:28 _________________________
+2026-07-29 09:01:28 GASNet/UPCXX/OFI environment variables:
+2026-07-29 09:01:28   GASNET_BACKTRACE=1
+2026-07-29 09:01:28   GASNET_ENVCMD=/usr/bin/env
+2026-07-29 09:01:28   GASNET_MAX_SEGSIZE=250.0MB/P
+2026-07-29 09:01:28   GASNET_PLATFORM=generic
+2026-07-29 09:01:28   GASNET_PSHM_ENABLED=yes
+2026-07-29 09:01:28   GASNET_PSHM_NODES=8
+2026-07-29 09:01:28   GASNET_SMP_SPAWNER=fork
+2026-07-29 09:01:28   GASNET_SPAWN_CONDUIT=SMP
+2026-07-29 09:01:28   GASNET_SPAWN_HAVE_FORK=1
+2026-07-29 09:01:28   GASNET_SPAWN_HAVE_MPI=1
+2026-07-29 09:01:28   GASNET_SPAWN_HAVE_PMI=1
+2026-07-29 09:01:28   GASNET_SPAWN_HAVE_SSH=1
+2026-07-29 09:01:28   UPCXX_SHARED_HEAP_SIZE=250.0 MB
+2026-07-29 09:01:28 _________________________
+2026-07-29 09:01:28 Timing reported as min/my/average/max, balance
+2026-07-29 09:01:28 upcxx::init Before=0.00/0.00/0.00/0.00, bal=1.00 active=8
+upcxx::init After=0.11/0.11/0.11/0.11 s, 1.00
+upcxx::init FirstBarrier=0.00/0.00/0.00/0.00 s, 0.57
+upcxx::init Starting RAM=496.13/496.13/496.13/496.13, bal=1.00 active=8 GB
+upcxx::init Post RAM=496.12/496.12/496.12/496.12, bal=1.00 active=8 GB
+2026-07-29 09:01:28 Process 0 on node 0 is initially pinned to 0-63
+2026-07-29 09:01:28 [0] <utils.cpp:513> CPU Pinnings - local rank(s) 0-7: 0-63
+2026-07-29 09:01:28 [0] <utils.cpp:513> GASNET/UPCXX Environment - local rank(s) 0-7: GASNET_PSHM_ENABLED=yes,GASNET_SPAWN_CONDUIT=SMP,GASNET_ENVCMD=/usr/bin/env,GASNET_SPAWN_HAVE_SSH=1,GASNET_MAX_SEGSIZE=250.0MB/P,GASNET_SMP_SPAWNER=fork,UPCXX_SHARED_HEAP_SIZE=250.0 MB,GASNET_SPAWN_HAVE_MPI=1,GASNET_SPAWN_HAVE_FORK=1,GASNET_PLATFORM=generic,GASNET_BACKTRACE=1,GASNET_SPAWN_HAVE_PMI=1,GASNET_PSHM_NODES=8,
+2026-07-29 09:01:28 [0] <utils.cpp:513> JOB Environment - local rank(s) 0-7: 
+2026-07-29 09:01:28 [0] <utils.cpp:568> OTHER Environment: SHELL=/bin/bash,NUM_RUNS=3,PERL=/usr/bin/perl,HISTCONTROL=ignoredups,no_proxy=sandia.gov,ca.sandia.gov,localhost,127.0.0.1,127.0.0.0/8,192.168.0.0/16,10.0.0.0/8,.eth,.ipmi,HISTSIZE=1000,HOSTNAME=gn120,_ModuleTable007_=enN0ZC8xLjUuNiIsCndWID0gIjAwMDAwMDAwMS4wMDAwMDAwMDUuMDAwMDAwMDA2Lip6ZmluYWwiLAp9LAp9LAptcGF0aEEgPSB7CiIvb3B0L3NwYWNrL3JoZWw5X3g4Ni9zdGFjay0yMDI1LTAzL3NwYWNrL3NoYXJlL3NwYWNrL2xtb2QvbGludXgtcmhlbDkteDg2XzY0L29wZW5tcGkvNC4xLjctbmJscm1hcC9Db3JlIiwgIi9vcHQvc3BhY2svcmhlbDlfeDg2L3N0YWNrLTIwMjUtMDMvc3BhY2svc2hhcmUvc3BhY2svbG1vZC9saW51eC1yaGVsOS14ODZfNjQvZ2NjLzEzLjMuMCIKLCAiL29wdC9zcGFjay9yaGVsOV94ODYvc3RhY2stMjAyNS0wMy9zcGFjay9zaGFyZS9zcGFjay9sbW9kL2xpbnV4LXJoZWw5LXg4Nl82NC9Db3JlIiwgIi9vcHQvc3BhY2svcmhlbDlfeDg2L3N0,_ModuleTable002_=MDAzLjAwMDAwMDAzMC4wMDAwMDAwMDUuKnpmaW5hbCIsCn0sCmN1ZGEgPSB7CmZuID0gIi9vcHQvc25sLW1vZHVsZXMvY3VkYS8xMy4xLmx1YSIsCmZ1bGxOYW1lID0gImN1ZGEvMTMuMSIsCmxvYWRPcmRlciA9IDYsCnByb3BUID0ge30sCnN0YWNrRGVwdGggPSAwLApzdGF0dXMgPSAiYWN0aXZlIiwKdXNlck5hbWUgPSAiY3VkYS8xMy4xIiwKd1YgPSAiMDAwMDAwMDEzLjAwMDAwMDAwMS4qemZpbmFsIiwKfSwKZ2NjID0gewphY3Rpb25BID0gewpbW3ByZXBlbmRfcGF0aCgiTU9EVUxFUEFUSCIsIi9vcHQvc3BhY2svcmhlbDlfeDg2L3N0YWNrLTIwMjUtMDMvc3BhY2svc2hhcmUvc3BhY2svbG1vZC9saW51eC1yaGVsOS14ODZfNjQvZ2NjLzEzLjMuMCIpXV0sCn0sCmRlcFQg,KOKKOS_INSTALL=/home/jciesko/Kokkos/kokkos/install-openmp/,_ModuleTable005_=IiwKZnVsbE5hbWUgPSAib3Blbm1waS80LjEuNyIsCmxvYWRPcmRlciA9IDQsCnByb3BUID0ge30sCnN0YWNrRGVwdGggPSAwLApzdGF0dXMgPSAiYWN0aXZlIiwKdXNlck5hbWUgPSAib3Blbm1waS80LjEuNyIsCndWID0gIjAwMDAwMDAwNC4wMDAwMDAwMDEuMDAwMDAwMDA3Lip6ZmluYWwiLAp9LAp1Y3ggPSB7CmRlcFQgPSB7CmRlcEEgPSB7CnsKc24gPSAiY3VkYSIsCnZlcnNpb24gPSB7CmtpbmQgPSAiZml4ZWQiLAp2YWx1ZSA9ICIxMi42LjIiLAp9LAp9LAp9LAp9LApmbiA9ICIvb3B0L3NwYWNrL3JoZWw5X3g4Ni9zdGFjay0yMDI1LTAzL3NwYWNrL3NoYXJlL3NwYWNrL2xtb2QvbGludXgtcmhlbDkteDg2XzY0L0NvcmUvdWN4LzEuMTcuMC5sdWEiLApmdWxsTmFtZSA9,PWD=/home/jciesko/RAndD/jciesko_workspace/mhm2-kmer-analysis-proxy,KRB5CCNAME=FILE:/tmp/krb5cc_111544,LOGNAME=jciesko,XDG_SESSION_TYPE=tty,MODULESHOME=/usr/share/lmod/lmod,UV_INDEX_URL=https://nexus.web.sandia.gov/repository/pypi-group/simple,CXX=mpicxx,_ModuleTable008_=YWNrLTIwMjUtMDMvdmVudnMvbW9kdWxlcyIsICIvb3B0L3NubC1tb2R1bGVzIiwgIi91c3Ivc2hhcmUvbW9kdWxlZmlsZXMvTGludXgiCiwgIi91c3Ivc2hhcmUvbW9kdWxlZmlsZXMvQ29yZSIsICIvdXNyL3NoYXJlL2xtb2QvbG1vZC9tb2R1bGVmaWxlcy9Db3JlIiwKfSwKc3lzdGVtQmFzZU1QQVRIID0gIi9vcHQvc3BhY2svcmhlbDlfeDg2L3N0YWNrLTIwMjUtMDMvc3BhY2svc2hhcmUvc3BhY2svbG1vZC9saW51eC1yaGVsOS14ODZfNjQvQ29yZTovb3B0L3NwYWNrL3JoZWw5X3g4Ni9zdGFjay0yMDI1LTAzL3ZlbnZzL21vZHVsZXM6L29wdC9zbmwtbW9kdWxlczovdXNyL3NoYXJlL21vZHVsZWZpbGVzL0xpbnV4Oi91c3Ivc2hhcmUvbW9kdWxlZmlsZXMvQ29yZTovdXNy,BACKEND=CPU,ftp_proxy=http://proxy.ca.sandia.gov:80/,MOTD_SHOWN=pam,HOME=/home/jciesko,_ModuleTable_Sz_=9,DATA_MEDIUM=/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed,DATA_LARGE=/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome,PROXY_OUTPUT=/home/jciesko/RAndD/jciesko_workspace/mhm2-kmer-analysis-proxy/results/CPU/results_20260729_084911_76074d20/KOKKOS_OFF_CPU_ranks_8/run_01,ZSTD_ROOT=/opt/spack/rhel9_x86/stack-2025-03/spack/opt/spack/linux-rhel9-x86_64/gcc-11.5.0/zstd-1.5.6-iq4o32nmfc2dfuigtigxvmanqj44n3m6,LMOD_SETTARG_FULL_SUPPORT=no,https_proxy=http://proxy.ca.sandia.gov:80/,LMOD_VERSION=8.7.65,KOKKOS_USE=KOKKOS_OFF,_ModuleTable003_=PSB7CmRlcEEgPSB7CnsKc24gPSAienN0ZCIsCnZlcnNpb24gPSB7CmtpbmQgPSAiZml4ZWQiLAp2YWx1ZSA9ICIxLjUuNiIsCn0sCn0sCn0sCn0sCmZuID0gIi9vcHQvc3BhY2svcmhlbDlfeDg2L3N0YWNrLTIwMjUtMDMvc3BhY2svc2hhcmUvc3BhY2svbG1vZC9saW51eC1yaGVsOS14ODZfNjQvQ29yZS9nY2MvMTMuMy4wLmx1YSIsCmZ1bGxOYW1lID0gImdjYy8xMy4zLjAiLApsb2FkT3JkZXIgPSAyLApwcm9wVCA9IHt9LApzdGFja0RlcHRoID0gMCwKc3RhdHVzID0gImFjdGl2ZSIsCnVzZXJOYW1lID0gImdjYy8xMy4zLjAiLAp3ViA9ICIwMDAwMDAwMTMuMDAwMDAwMDAzLip6ZmluYWwiLAp9LApvcGVubXBpID0gewphY3Rpb25BID0gewpbW3ByZXBlbmRfcGF0aCgiTU9E,PERLSTART_FLAGS=-Mbytes ,MPIRUN_CMD=/opt/spack/rhel9_x86/stack-2025-03/spack/opt/spack/linux-rhel9-x86_64/gcc-11.5.0/openmpi-4.1.7-nblrmap7qoogftg4ko5xpozktpsyqgfi/bin/mpirun -np %N %C,XDG_SESSION_CLASS=user,LMOD_PKG=/usr/share/lmod/lmod,F77=/opt/spack/rhel9_x86/stack-2025-03/spack/opt/spack/linux-rhel9-x86_64/gcc-11.5.0/gcc-13.3.0-idfi4sskipw5bxzgpl4bc4qcvssrtqlr/bin/gfortran,NUM_RANKS=8,DATE=2026-07-29,OPENMPI_ROOT=/opt/spack/rhel9_x86/stack-2025-03/spack/opt/spack/linux-rhel9-x86_64/gcc-11.5.0/openmpi-4.1.7-nblrmap7qoogftg4ko5xpozktpsyqgfi,LESSOPEN=||/usr/bin/lesspipe.sh %s,USER=jciesko,CURL_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt,NO_PROXY=sandia.gov,ca.sandia.gov,localhost,127.0.0.1,127.0.0.0/8,192.168.0.0/16,10.0.0.0/8,.eth,.ipmi,FTP_PROXY=http://proxy.ca.sandia.gov:80/,CUDA_ROOT=/usr/local/cuda-13.1,RUN_NETWORK=smp,DATA_ROOT_COW=/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome,OMP_THREADS_PER_RANK=16,LOADEDMODULES=zstd/1.5.6:gcc/13.3.0:ucx/1.17.0:openmpi/4.1.7:cmake/3.30.5:cuda/13.1,PIP_INDEX_URL=https://nexus.web.sandia.gov/repository/pypi-group/simple,OMPI_CC=/opt/spack/rhel9_x86/stack-2025-03/spack/opt/spack/linux-rhel9-x86_64/gcc-11.5.0/gcc-13.3.0-idfi4sskipw5bxzgpl4bc4qcvssrtqlr/bin/gcc,LMOD_ROOT=/usr/share/lmod,NVHPC_CUDA_HOME=/usr/local/cuda-13.1,SHLVL=2,BASH_ENV=/usr/share/lmod/lmod/init/bash,_ModuleTable006_=ICJ1Y3gvMS4xNy4wIiwKbG9hZE9yZGVyID0gMywKcHJvcFQgPSB7fSwKcmVmX2NvdW50ID0gMSwKc3RhY2tEZXB0aCA9IDEsCnN0YXR1cyA9ICJhY3RpdmUiLAp1c2VyTmFtZSA9ICJ1Y3gvMS4xNy4wIiwKd1YgPSAiMDAwMDAwMDAxLjAwMDAwMDAxNy4qemZpbmFsIiwKfSwKenN0ZCA9IHsKZm4gPSAiL29wdC9zcGFjay9yaGVsOV94ODYvc3RhY2stMjAyNS0wMy9zcGFjay9zaGFyZS9zcGFjay9sbW9kL2xpbnV4LXJoZWw5LXg4Nl82NC9Db3JlL3pzdGQvMS41LjYubHVhIiwKZnVsbE5hbWUgPSAienN0ZC8xLjUuNiIsCmxvYWRPcmRlciA9IDEsCnByb3BUID0ge30sCnJlZl9jb3VudCA9IDEsCnN0YWNrRGVwdGggPSAxLApzdGF0dXMgPSAiYWN0aXZlIiwKdXNlck5hbWUgPSAi,UCX_ROOT=/opt/spack/rhel9_x86/stack-2025-03/spack/opt/spack/linux-rhel9-x86_64/gcc-11.5.0/ucx-1.17.0-e6vsycgpzfwnvui62ambgwvqtqvn7blo,LMOD_sys=Linux,RUN_BENCHMARK_LOOP=1,HTTPS_PROXY=http://proxy.ca.sandia.gov:80/,HTTP_PROXY=http://proxy.ca.sandia.gov:80/,_ModuleTable009_=L3NoYXJlL2xtb2QvbG1vZC9tb2R1bGVmaWxlcy9Db3JlIiwKfQo=,XDG_SESSION_ID=1,http_proxy=http://proxy.ca.sandia.gov:80/,_ModuleTable001_=X01vZHVsZVRhYmxlXyA9IHsKTVR2ZXJzaW9uID0gMywKY19yZWJ1aWxkVGltZSA9IGZhbHNlLApjX3Nob3J0VGltZSA9IGZhbHNlLApkZXB0aFQgPSB7fSwKZmFtaWx5ID0gewpjb21waWxlciA9ICJnY2MiLAptcGkgPSAib3Blbm1waSIsCn0sCm1UID0gewpjbWFrZSA9IHsKZm4gPSAiL29wdC9zcGFjay9yaGVsOV94ODYvc3RhY2stMjAyNS0wMy9zcGFjay9zaGFyZS9zcGFjay9sbW9kL2xpbnV4LXJoZWw5LXg4Nl82NC9Db3JlL2NtYWtlLzMuMzAuNS5sdWEiLApmdWxsTmFtZSA9ICJjbWFrZS8zLjMwLjUiLApsb2FkT3JkZXIgPSA1LApwcm9wVCA9IHt9LApzdGFja0RlcHRoID0gMCwKc3RhdHVzID0gImFjdGl2ZSIsCnVzZXJOYW1lID0gImNtYWtlIiwKd1YgPSAiMDAwMDAw,LMOD_FAMILY_COMPILER=gcc,SSL_CERT_FILE=/etc/pki/tls/certs/ca-bundle.crt,_ModuleTable004_=VUxFUEFUSCIsIi9vcHQvc3BhY2svcmhlbDlfeDg2L3N0YWNrLTIwMjUtMDMvc3BhY2svc2hhcmUvc3BhY2svbG1vZC9saW51eC1yaGVsOS14ODZfNjQvb3Blbm1waS80LjEuNy1uYmxybWFwL0NvcmUiKV1dLAp9LApkZXBUID0gewpkZXBBID0gewp7CnNuID0gImN1ZGEiLAp2ZXJzaW9uID0gewpraW5kID0gImZpeGVkIiwKdmFsdWUgPSAiMTIuNi4yIiwKfSwKfSwKewpzbiA9ICJ1Y3giLAp2ZXJzaW9uID0gewpraW5kID0gImZpeGVkIiwKdmFsdWUgPSAiMS4xNy4wIiwKfSwKfSwKfSwKfSwKZm4gPSAiL29wdC9zcGFjay9yaGVsOV94ODYvc3RhY2stMjAyNS0wMy9zcGFjay9zaGFyZS9zcGFjay9sbW9kL2xpbnV4LXJoZWw5LXg4Nl82NC9Db3JlL29wZW5tcGkvNC4xLjcubHVh,LMOD_FAMILY_MPI_VERSION=4.1.7,PMIRUN_CMD=/opt/spack/rhel9_x86/stack-2025-03/spack/opt/spack/linux-rhel9-x86_64/gcc-11.5.0/openmpi-4.1.7-nblrmap7qoogftg4ko5xpozktpsyqgfi/bin/mpirun -np %N %C,PIP_CERT=/etc/pki/tls/certs/ca-bundle.crt,REQUESTS_CA_BUNDLE=/etc/pki/tls/certs/ca-bundle.crt,DOCKER_HOST=unix:///run/user/111544/podman/podman.sock,LMOD_FAMILY_MPI=openmpi,UCX_WARN_UNUSED_ENV_VARS=n,FC=/opt/spack/rhel9_x86/stack-2025-03/spack/opt/spack/linux-rhel9-x86_64/gcc-11.5.0/gcc-13.3.0-idfi4sskipw5bxzgpl4bc4qcvssrtqlr/bin/gfortran,which_declare=declare -f,LC_ALL=C,LMOD_FAMILY_COMPILER_VERSION=13.3.0,CUDA_HOME=/usr/local/cuda-13.1,PROJECT_ROOT=/home/jciesko/RAndD/proxy-apps/,DATA_SMALL=/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed,SLURM_CONF=/run/slurm/conf/slurm.conf,CC=mpicc,_LMFILES_=/opt/spack/rhel9_x86/stack-2025-03/spack/share/spack/lmod/linux-rhel9-x86_64/Core/zstd/1.5.6.lua:/opt/spack/rhel9_x86/stack-2025-03/spack/share/spack/lmod/linux-rhel9-x86_64/Core/gcc/13.3.0.lua:/opt/spack/rhel9_x86/stack-2025-03/spack/share/spack/lmod/linux-rhel9-x86_64/Core/ucx/1.17.0.lua:/opt/spack/rhel9_x86/stack-2025-03/spack/share/spack/lmod/linux-rhel9-x86_64/Core/openmpi/4.1.7.lua:/opt/spack/rhel9_x86/stack-2025-03/spack/share/spack/lmod/linux-rhel9-x86_64/Core/cmake/3.30.5.lua:/opt/snl-modules/cuda/13.1.lua,CMAKE_ROOT=/opt/spack/rhel9_x86/stack-2025-03/spack/opt/spack/linux-rhel9-x86_64/gcc-11.5.0/cmake-3.30.5-xlsxipojupwbnks432cdjsg7r5i7pjsu,DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/111544/bus,LMOD_CMD=/usr/share/lmod/lmod/libexec/lmod,LMOD_MPI_VERSION=4.1.7-nblrmap,OMPI_CXX=/opt/spack/rhel9_x86/stack-2025-03/spack/opt/spack/linux-rhel9-x86_64/gcc-11.5.0/gcc-13.3.0-idfi4sskipw5bxzgpl4bc4qcvssrtqlr/bin/g++,MAIL=/var/spool/mail/jciesko,LMOD_SYSTEM_DEFAULT_MODULES=__NO_SYSTEM_DEFAULT_MODULES__,LMOD_MPI_NAME=openmpi,INPUT_SIZE=small,OLDPWD=/home/jciesko/RAndD/jciesko_workspace/mhm2-kmer-analysis-proxy,GCC_ROOT=/opt/spack/rhel9_x86/stack-2025-03/spack/opt/spack/linux-rhel9-x86_64/gcc-11.5.0/gcc-13.3.0-idfi4sskipw5bxzgpl4bc4qcvssrtqlr,BASH_FUNC_which%%=() {  ( alias;
+ eval ${which_declare} ) | /usr/bin/which --tty-only --read-alias --read-functions --show-tilde --show-dot $@
+},BASH_FUNC_module%%=() {  if [ -z "${LMOD_SH_DBG_ON+x}" ]; then
+ case "$-" in 
+ *v*x*)
+ __lmod_sh_dbg='vx'
+ ;;
+ *v*)
+ __lmod_sh_dbg='v'
+ ;;
+ *x*)
+ __lmod_sh_dbg='x'
+ ;;
+ esac;
+ fi;
+ if [ -n "${__lmod_sh_dbg:-}" ]; then
+ set +$__lmod_sh_dbg;
+ echo "Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for Lmod's output" 1>&2;
+ fi;
+ eval "$($LMOD_CMD shell "$@")" && eval "$(${LMOD_SETTARG_CMD:-:} -s sh)";
+ __lmod_my_status=$?;
+ if [ -n "${__lmod_sh_dbg:-}" ]; then
+ echo "Shell debugging restarted" 1>&2;
+ set -$__lmod_sh_dbg;
+ fi;
+ unset __lmod_sh_dbg;
+ return $__lmod_my_status
+},
+2026-07-29 09:01:28 Allowing up to 3 extra threads in the thread pool
+2026-07-29 09:01:28 Paired files /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq and /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq are 703.60MB and 703.90MB
+2026-07-29 09:01:28 Total size of 1 input file is 1.37GB; 175.94MB per rank; 1.37GB per node
+2026-07-29 09:01:28 Initial free memory across all 1 nodes: 496.12GB (496.12GB avg, 496.12GB min, 496.12GB max)
+2026-07-29 09:01:28 Change in free memory after reduction and thread construction 0B (0B avg, 0B min, 0B max)
+2026-07-29 09:01:28 [0] <main.cpp:211> Preparing to load reads
+ Free memory: 496.12GB, stat: Rank0: 547626 3530 3258 703 0 2421 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 5502 2230 28 0 8 3 0 1 20 0 2 0 266107 2243076096 3328 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:28 T139761789755392(125033;125001):0 2026-07-29 09:01:28 [0] <mem_profile.cpp:348> MemoryTrackerThread free_mem=496.12GB
+2026-07-29 09:01:28 Preparing to load reads
+ free_mem GB: 496.12/496.12/496.12/496.12, bal=1.00 active=8
+2026-07-29 09:01:28 [0] <main.cpp:216> Opened read files
+ Free memory: 496.12GB, stat: Rank0: 547626 3537 3262 703 0 2421 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 5509 2230 28 0 8 3 0 1 20 0 2 0 266107 2243076096 3328 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:28 Opened read files
+ free_mem GB: 496.12/496.12/496.12/496.12, bal=1.00 active=8
+2026-07-29 09:01:28 Timing (entrance barrier) merge_reads.cpp:merge_reads: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:28 Timing (entrance barrier) fastq.hpp:open_all_global_blocking: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:28 [0] <fastq.cpp:541> Constructed FastqReader with fname=/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq:/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq first_wait=NOT READY
+2026-07-29 09:01:28 [0] <fastq.cpp:559> New two file paired fname=/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq fname2=/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq
+2026-07-29 09:01:28 [0] <fastq.cpp:588> Opening second FastqReader with /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq
+2026-07-29 09:01:28 [0] <fastq.cpp:541> Constructed FastqReader with fname=/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq first_wait=NOT READY
+2026-07-29 09:01:28 [0] <timers.cpp:656> Timing FastqReader construct 36_S23_R2_001_trim2mil.fastq:1.789e-05
+2026-07-29 09:01:28 [0] <timers.cpp:656> Timing FastqReader construct 36_S23_R2_001_trim2mil.fastq:0.000143781
+2026-07-29 09:01:28 [0] <timers.cpp:656> Timing Opening /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq:/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq:0.000171963
+2026-07-29 09:01:28 [0] <fastq.cpp:920> set_block: file=/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq start=0 size=92222636 file_size=737781078
+2026-07-29 09:01:28 [0] <fastq.cpp:920> set_block: file=/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq start=0 size=92261947 file_size=738095572
+2026-07-29 09:01:28 [0] <fastq.cpp:767> Opened /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq in 1.756e-05s.
+2026-07-29 09:01:28 [0] <fastq.hpp:111> Reading /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq from 0 to 92261949=92261949 of 738095572
+2026-07-29 09:01:28 [0] <fastq.hpp:111> Reading /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq from 0 to 92222685=92222685 of 737781078
+2026-07-29 09:01:28 Reading FASTQ file /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq
+2026-07-29 09:01:28 [0] <fastq.cpp:940> Reading fastq file /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq at pos 0==0 to 92261949 seek 9.5e-07s io to open+find+seek 3.398e-05s
+2026-07-29 09:01:28 Reading FASTQ file /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq
+2026-07-29 09:01:28 [0] <fastq.cpp:940> Reading fastq file /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq at pos 0==0 to 92222685 seek 8.5e-07s io to open+find+seek 2.02e-05s
+2026-07-29 09:01:28 [0] <fastq.cpp:704> Found matching pair for /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq at 0 and /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq at 0 - NB501332:122:HM532BGX2:1:11101:21292:1077
+2026-07-29 09:01:28 [0] <fastq.hpp:111> Reading /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq from 0 to 92222685=92222685 of 737781078
+2026-07-29 09:01:28 [0] <fastq.hpp:111> Reading /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq from 0 to 92276887=92276887 of 738095572
+2026-07-29 09:01:28 Reading FASTQ file /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq
+2026-07-29 09:01:28 [0] <fastq.cpp:940> Reading fastq file /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq at pos 0==0 to 92222685 seek 9.3e-07s io to open+find+seek 2.121e-05s
+2026-07-29 09:01:28 Reading FASTQ file /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq
+2026-07-29 09:01:28 [0] <fastq.cpp:940> Reading fastq file /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq at pos 0==0 to 92276887 seek 8.8e-07s io to open+find+seek 3.493e-05s
+2026-07-29 09:01:28 [0] <timers.cpp:774> fastq.hpp:open_all_global_blocking utime=0.00047s sys=0.001727s tot=0.002197s. 102.61% of 0.00214113s
+2026-07-29 09:01:28 Timing (entrance) FastqReader construct 36_S23_R2_001_trim2mil.fastq:0.00/0.00/0.00/0.00, bal=0.56 active=8
+2026-07-29 09:01:28 Timing (entrance) FastqReader construct 36_S23_R2_001_trim2mil.fastq:0.00/0.00/0.00/0.00, bal=0.47 active=8
+2026-07-29 09:01:28 [0] <timers.cpp:818> Timing Finish global block seeks on all files start:0.00/0.00/0.00/0.00, bal=0.30 active=8
+2026-07-29 09:01:28 [0] <timers.cpp:818> Timing Finish global block seeks on all files stop:NOT VALID MinSumMax
+2026-07-29 09:01:28 Timing fastq.hpp:open_all_global_blocking: 0.00/0.00/0.00/0.00 s, 0.97 barrier 0.00 s
+2026-07-29 09:01:28 [0] <merge_reads.cpp:264> After opening all fastq files Free memory: 496.11GB, stat: Rank0: 547907 3742 3405 703 0 2702 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 5667 2230 35 0 8 3 0 1 20 0 2 0 266107 2244227072 3584 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:28 After opening all fastq files free_mem GB: 496.11/496.11/496.11/496.11, bal=1.00 active=8
+2026-07-29 09:01:28 Timing (entrance barrier) merge_reads.cpp:estimate_num_reads: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:28 Timing (entrance barrier) fastq.hpp:open_all_global_blocking: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:28 [0] <timers.cpp:774> fastq.hpp:open_all_global_blocking utime=3.7e-05s sys=1.6e-05s tot=5.3e-05s. 100% of 1.07e-06s
+2026-07-29 09:01:28 Timing fastq.hpp:open_all_global_blocking: 0.00/0.00/0.00/0.00 s, 0.88 barrier 0.00 s
+2026-07-29 09:01:28 Estimating with about 7 ranks for each of the 1 file(s)
+2026-07-29 09:01:28 [0] <merge_reads.cpp:105> Before estimate_num_reads Free memory: 496.11GB, stat: Rank0: 547907 3765 3428 703 0 2702 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 5674 2230 36 0 8 3 0 1 20 0 2 0 266107 2244227072 3584 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:28 Before estimate_num_reads free_mem GB: 496.11/496.11/496.11/496.11, bal=1.00 active=8
+2026-07-29 09:01:28 [0] <progress_bar.cpp:41> ProgressBar Scanning reads file to estimate number of reads 184484581
+2026-07-29 09:01:28 [0] <progress_bar.cpp:135> ProgressBar Scanning reads file to estimate number of reads done in 0.067 s.
+2026-07-29 09:01:28 [0] <progress_bar.cpp:145> ProgressBar Scanning reads file to estimate number of reads done. 0.05/0.07/0.06/0.07, bal=0.86 active=8
+2026-07-29 09:01:28 [0] <timers.cpp:774> merge_reads.cpp:estimate_num_reads utime=0.055737s sys=0.011797s tot=0.067534s. 99.0356% of 0.0681916s
+2026-07-29 09:01:28 Timing merge_reads.cpp:estimate_num_reads: 0.07/0.07/0.07/0.07 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:28 [0] <merge_reads.cpp:188> After estimate_num_reads Free memory: 496.12GB, stat: Rank0: 547907 3787 3450 703 0 2702 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 5681 2230 36 0 13 4 0 1 20 0 2 0 266107 2244227072 3584 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:28 After estimate_num_reads free_mem GB: 496.12/496.12/496.12/496.12, bal=1.00 active=8
+2026-07-29 09:01:28 Found maximum read length of 151 and (rank 0's) max estimated total 4009679 per rank
+2026-07-29 09:01:28 [0] <packed_reads.cpp:310> Reserving 1052850 reads and 158980350 bases: 167.68MB for 36_S23_R2_001_trim2mil-merged.fastq
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=1 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=2 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=3 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=4 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=5 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=6 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=7 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=8 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=9 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=10 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=11 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=12 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=13 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=14 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=15 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=16 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=17 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=18 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=19 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=20 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=21 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=22 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=23 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=24 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=25 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=26 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=27 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=28 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=29 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=30 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=31 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=32 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=33 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=34 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=35 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=36 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=37 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <linear_allocator_pool.cpp:129> Added new 4.00MB block. size=38 num_allocations=0 m_used=0B m_peak=0B allocator=32043416
+2026-07-29 09:01:28 [0] <merge_reads.cpp:291> After reserving space for storing reads Free memory: 496.11GB, stat: Rank0: 590970 3828 3452 703 0 45765 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 5722 2230 36 0 13 4 0 1 20 0 2 0 266107 2420613120 3584 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:28 After reserving space for storing reads free_mem GB: 496.11/496.11/496.11/496.11, bal=1.00 active=8
+2026-07-29 09:01:28 Estimated total number of reads as 8021065, and max for any rank 1002810
+2026-07-29 09:01:28 [0] <progress_bar.cpp:41> ProgressBar Merging reads 184484581
+2026-07-29 09:01:30 T139761789755392(125033;125001):1 2026-07-29 09:01:30 [0] <mem_profile.cpp:86>  MemFree:        520993756 kB MemAvailable:   519828528 kB MemAvailable:   519828528 kB Buffers:            4724 kB Cached:          2552440 kB Mapped:           211600 kB Shmem:             53448 kB ShmemHugePages:        0 kB ShmemPmdMapped:        0 kB HugePages_Total:       0 HugePages_Free:        0 HugePages_Rsvd:        0 HugePages_Surp:        0
+2026-07-29 09:01:30 [0] <progress_bar.cpp:135> ProgressBar Merging reads done in 1.828 s.
+2026-07-29 09:01:30 Finished reading 36_S23_R1_001_trim2mil.fastq tot_num_reads=4000000 tot_num_pairs=2000000 tot_num_bases=595556721
+2026-07-29 09:01:30 [0] <progress_bar.cpp:145> ProgressBar Merging reads done. 1.79/1.83/1.80/1.83, bal=0.98 active=8
+2026-07-29 09:01:30 Timing fastq IO-ops /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq:/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq: 0.00/0.00/0.00/0.00, bal=0.82 active=8 counts: 8/8/8.00/8, bal=1.00 first: 0.00/0.00/0.00/0.00, bal=0.76 last: 0.00/0.04/0.01/0.04, bal=0.29
+2026-07-29 09:01:30 Timing fastq Reading /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R1_001_trim2mil.fastq:/home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq: 0.15/0.15/0.15/0.15, bal=0.96 active=8 counts: 1101034/1101179/1101337.62/1101698, bal=1.00 first: 0.00/0.00/0.00/0.00, bal=0.76 last: 0.00/0.04/0.01/0.04, bal=0.29
+2026-07-29 09:01:30 Timing fastq IO-ops /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq: 0.00/0.00/0.00/0.00, bal=0.81 active=8 counts: 8/8/8.00/8, bal=1.00 first: 0.00/0.00/0.00/0.00, bal=0.69 last: 0.00/0.04/0.01/0.04, bal=0.29
+2026-07-29 09:01:30 Timing fastq Reading /home/jciesko/RAndD/proxy-apps//assembler_input_datasets/gavin_lab_data/CowMetaGenome/trimmed/36_S23_R2_001_trim2mil.fastq: 0.14/0.15/0.14/0.15, bal=0.96 active=8 counts: 1101030/1101174/1101333.62/1101694, bal=1.00 first: 0.00/0.00/0.00/0.00, bal=0.68 last: 0.00/0.04/0.01/0.04, bal=0.29
+2026-07-29 09:01:30 Timing merge_reads.cpp:merge_reads merging all exit: 1.86/1.90/1.87/1.90 s, 0.99
+2026-07-29 09:01:30 Timing (entrance barrier) All merging done: 0/0/0/0 s, 1.00 barrier 0.04 s
+2026-07-29 09:01:30 [0] <timers.cpp:774> All merging done utime=0.000248s sys=2.7e-05s tot=0.000275s. 100% of 2.5e-07s
+2026-07-29 09:01:30 Timing All merging done: 0.00/0.00/0.00/0.00 s, 0.80 barrier 0.00 s
+2026-07-29 09:01:30 Timing dump_reads: 0.00 s 
+2026-07-29 09:01:30 Merged reads in 1 files:
+2026-07-29 09:01:30   merged 477109 (23.86%) of 2000000 pairs
+2026-07-29 09:01:30   ambiguous 9812 (0.49%) ambiguous pairs
+2026-07-29 09:01:30   missing pair1 0 pair2 0
+2026-07-29 09:01:30   average merged length 195.279
+2026-07-29 09:01:30   average overlap length 91.8245
+2026-07-29 09:01:30   max read length 290
+2026-07-29 09:01:30   avg read length 148
+2026-07-29 09:01:30 Rank0 bytes read 184499572 of 1475876650
+2026-07-29 09:01:30 Total time reading fastq files: 0.57/0.59/0.58/0.59, bal=0.98 active=8
+2026-07-29 09:01:30 [0] <timers.cpp:774> merge_reads.cpp:merge_reads utime=1.72497s sys=0.168053s tot=1.89303s. 99.5575% of 1.90144s
+2026-07-29 09:01:30 Timing merge_reads.cpp:merge_reads: 1.90/1.90/1.90/1.90 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:30 Merging reads                           1.90s 
+2026-07-29 09:01:30 Cache used 508.28MB memory on node 0 for reads
+2026-07-29 09:01:30 [0] <packed_reads.cpp:446> PackedReads num_reads=500064 num_bases=68933789 name_bytes=0: 73.37MB for 36_S23_R2_001_trim2mil-merged.fastq
+2026-07-29 09:01:30 Loaded 36_S23_R2_001_trim2mil-merged.fastq: reads=3999906 tot_bases=552221958 names=0B PackedReads: 587.67MB active_ranks=8 (0-7) avg=73.46MB
+2026-07-29 09:01:30 
+2026-07-29 09:01:30 Completed initialization in 1.92 s at 07/29/26 09:01:30 (495.62GB free memory on node 0)
+2026-07-29 09:01:30 Timing (entrance barrier) Start Contigging: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:30 [0] <timers.cpp:774> Start Contigging utime=0s sys=6.1e-05s tot=6.1e-05s. 100% of 1.5e-07s
+2026-07-29 09:01:30 Timing Start Contigging: 0.00/0.00/0.00/0.00 s, 0.67 barrier 0.00 s
+2026-07-29 09:01:30 [0] <main.cpp:182> GasNetVars: SharedHeapSize=250.00MB UserAllocations=0 0B RDZV=0 0B MISC=1 72B
+2026-07-29 09:01:30 _________________________
+2026-07-29 09:01:30 Contig generation k = 21
+2026-07-29 09:01:30 
+2026-07-29 09:01:30 [0] <contigging.cpp:73> Starting contigging k=21 Free memory: 495.62GB, stat: Rank0: 590971 22813 3582 703 0 45766 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 16209 2230 37 0 180 20 0 1 20 0 2 0 266107 2420617216 22620 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:30 Starting contigging k=21 free_mem GB: 495.62/495.62/495.62/495.62, bal=1.00 active=8
+2026-07-29 09:01:30 Timing (entrance barrier) packed_reads.cpp:estimate_num_kmers: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:30 [0] <progress_bar.cpp:41> ProgressBar Scanning reads to estimate number of kmers 500064
+2026-07-29 09:01:30 [0] <progress_bar.cpp:135> ProgressBar Scanning reads to estimate number of kmers done in 0.017 s.
+2026-07-29 09:01:30 [0] <progress_bar.cpp:145> ProgressBar Scanning reads to estimate number of kmers done. 0.02/0.02/0.02/0.02, bal=1.00 active=8
+2026-07-29 09:01:30 Processed 351875 (8.80%) reads, and estimated a maximum of 529344475 kmers
+2026-07-29 09:01:30 [0] <timers.cpp:774> packed_reads.cpp:estimate_num_kmers utime=0.017645s sys=0s tot=0.017645s. 97.419% of 0.0181125s
+2026-07-29 09:01:30 Timing packed_reads.cpp:estimate_num_kmers: 0.02/0.02/0.02/0.02 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:30 Using a minimizer length of 15
+2026-07-29 09:01:30 Timing (entrance barrier) kmer_dht.cpp:KmerDHT: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:30 Estimated kmer error rate 0.100
+2026-07-29 09:01:30 Initial counts for read kmers 17094667 ctg kmers 0 num errors 6831888
+2026-07-29 09:01:30 Bypassing ThreeTierAggrStore kmers - using FlatAggrStore with 8 ranks squashed to 1 nodes.  elem_size=104 sizeof=40
+2026-07-29 09:01:30   max RPCs in flight: unlimited
+2026-07-29 09:01:30 kmers: using a flat aggregating store for each rank (8) of max 1.03GB per aggregating rank 8.27GB node mem max_updates=68378671 max_expected_updates=8556105
+2026-07-29 09:01:30   max 10072 entries of 104B per target rank, 1022.94KB message size, 7 targets, 55.94MB node mem
+2026-07-29 09:01:30   max RPCs in flight: 100
+2026-07-29 09:01:30 There is 495.62GB free memory for hash table allocations
+2026-07-29 09:01:30 Element size for main HT 28 and for compact HT 32 (ratio 1.143)
+2026-07-29 09:01:30 Element counts for a target load factor of 0.660: read kmers 36252356, compact ht 25901010
+2026-07-29 09:01:30 Hash table sizes: read kmers 1015065968, compact ht 828832320, total 1843898288
+2026-07-29 09:01:30 Adjusted element counts by 3.000: read kmers 108757068 compact ht 77703030
+2026-07-29 09:01:31 Capacity is set to 108842081 for 108757068 max elements, size 2.84GB
+2026-07-29 09:01:31 T139761789755392(125033;125001):2 2026-07-29 09:01:30 [0] <mem_profile.cpp:86>  MemFree:        518614440 kB MemAvailable:   517449212 kB MemAvailable:   517449212 kB Buffers:            4724 kB Cached:          2552856 kB Mapped:           212696 kB Shmem:             53864 kB ShmemHugePages:        0 kB ShmemPmdMapped:        0 kB HugePages_Total:       0 HugePages_Free:        0 HugePages_Rsvd:        0 HugePages_Surp:        0
+2026-07-29 09:01:31 T139761789755392(125033;125001):3 2026-07-29 09:01:30 [0] <mem_profile.cpp:348> MemoryTrackerThread free_mem=493.48GB
+2026-07-29 09:01:31 T139761789755392(125033;125001):4 2026-07-29 09:01:31 [0] <mem_profile.cpp:86>  MemFree:        497809480 kB MemAvailable:   496644260 kB MemAvailable:   496644260 kB Buffers:            4724 kB Cached:          2552916 kB Mapped:           213228 kB Shmem:             53916 kB ShmemHugePages:        0 kB ShmemPmdMapped:        0 kB HugePages_Total:       0 HugePages_Free:        0 HugePages_Rsvd:        0 HugePages_Surp:        0
+2026-07-29 09:01:31 T139761789755392(125033;125001):5 2026-07-29 09:01:31 [0] <mem_profile.cpp:348> MemoryTrackerThread free_mem=473.64GB
+2026-07-29 09:01:31 [0] <mem_profile.cpp:86>  MemFree:        497013092 kB MemAvailable:   495847872 kB MemAvailable:   495847872 kB Buffers:            4724 kB Cached:          2552916 kB Mapped:           213228 kB Shmem:             53916 kB ShmemHugePages:        0 kB ShmemPmdMapped:        0 kB HugePages_Total:       0 HugePages_Free:        0 HugePages_Rsvd:        0 HugePages_Surp:        0
+2026-07-29 09:01:31 Memory available after hash table allocation: 472.88GB, used 22.74GB
+2026-07-29 09:01:31 [0] <timers.cpp:774> kmer_dht.cpp:KmerDHT utime=0.321917s sys=0.270754s tot=0.592671s. 99.6859% of 0.594539s
+2026-07-29 09:01:31 Timing kmer_dht.cpp:KmerDHT: 0.59/0.59/0.59/0.59 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:31 [0] <contigging.cpp:95> Allocated kmer_dht Free memory: 472.88GB, stat: Rank0: 1335703 767188 3911 703 0 790498 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 17840 2230 43 0 214 47 0 1 20 0 2 0 266107 5471039488 766981 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:31 Allocated kmer_dht free_mem GB: 472.88/472.88/472.88/472.88, bal=1.00 active=8
+2026-07-29 09:01:31 Timing (entrance barrier) kcount.cpp:analyze_kmers: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:31 Timing (entrance barrier) kcount.cpp:count_kmers: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:31 [0] <progress_bar.cpp:41> ProgressBar Processing reads to count kmers 500064
+2026-07-29 09:01:49 Total bytes sent in compressed supermers 2.96GB (compression is 2.423 over kmers)
+2026-07-29 09:01:49 Processed a total of 470721083 kmers
+2026-07-29 09:01:49 [0] <progress_bar.cpp:135> ProgressBar Processing reads to count kmers done in 18.676 s.
+2026-07-29 09:01:49 [0] <progress_bar.cpp:145> ProgressBar Processing reads to count kmers done. 18.09/18.68/18.48/18.68, bal=0.99 active=8
+2026-07-29 09:01:49 Timing (entrance barrier) kmer_dht.cpp:flush_updates: 0/0/0/0 s, 1.00 barrier 0.0/0.0/0.2/0.6 s, 0.3
+2026-07-29 09:01:49 Timing (entrance barrier) ThreeTierAggrStore::flush_updates - local append updates - kmers: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:49 Timing (entrance barrier) ThreeTierAggrStore::flush_updates wait first flush - kmers: 0/0/0/0 s, 1.00 barrier 0.04 s
+2026-07-29 09:01:49 [0] <timers.cpp:774> ThreeTierAggrStore::flush_updates wait first flush - kmers utime=0.016794s sys=1.8e-05s tot=0.016812s. 100% of 2.3e-07s
+2026-07-29 09:01:49 Timing ThreeTierAggrStore::flush_updates wait first flush - kmers: 0.00/0.00/0.00/0.00 s, 0.90 barrier 0.00 s
+2026-07-29 09:01:49 Timing (entrance barrier) ThreeTierAggrStore::flush_updates - quiescence - kmers: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:49 Timing (entrance barrier) FlatAggrStore::flush_updates - quiescence - kmers: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:49 [0] <flat_aggr_store.hpp:588> Rank 0 sent 1227 rpcs and received 1209 (1209) 
+2026-07-29 09:01:49 [0] <flat_aggr_store.hpp:599> kmers over 19.33s
+	updates self: 1725660/1730940/1761397.50/1795924, bal=0.98 1:7 active=8
+	remote: 12261468/12330578/12323870.12/12377516, bal=1.00 7:1 active=8
+	rpcs sent:1221/1227/1227.00/1232, bal=1.00 7:1 active=8
+	processed:1200/1209/1227.00/1252, bal=0.98 1:7 active=8
+	total remote_bytes=9.55GB 63.23MB /s for each 8 ranks
+2026-07-29 09:01:49 [0] <timers.cpp:774> FlatAggrStore::flush_updates - quiescence - kmers utime=0.000249s sys=5e-06s tot=0.000254s. 129.849% of 0.000195612s
+2026-07-29 09:01:49 Timing FlatAggrStore::wait_for_rpcs: 0 intervals, 0.00/0.00/0.00/0.00 s, 0.94 count 1221.0/1227/1227.0/1232.0, 1.0
+2026-07-29 09:01:49 Timing FlatAggrStore::prep_rpc: 0 intervals, 0.00/0.00/0.00/0.00 s, 0.96 count 1221.0/1227/1227.0/1232.0, 1.0
+2026-07-29 09:01:49 Timing FlatAggrStore::outer_rpc: 0 intervals, 0.39/0.44/0.41/0.44 s, 0.94 count 1221.0/1227/1227.0/1232.0, 1.0
+2026-07-29 09:01:49 Timing FlatAggrStore::inner_rpc: 0 intervals, 10.41/10.55/10.58/10.78 s, 0.98 count 1200.0/1209/1227.0/1252.0, 1.0
+2026-07-29 09:01:49 Timing FlatAggrStore::append_store: 0 intervals, 1.25/1.26/1.25/1.26 s, 0.99 count 12261468.0/12330578/12323870.1/12377516.0, 1.0
+2026-07-29 09:01:49 Timing FlatAggrStore::blocked: 0 intervals, 0.00/0.00/0.00/0.00 s, 0.92 count 1223.0/1229/1229.0/1234.0, 1.0
+2026-07-29 09:01:49 Timing FlatAggrStore::progress: 5.63/6.05/6.03/6.56 s, 0.92 count 384371.0/386537/386327.2/388009.0, 1.0
+2026-07-29 09:01:49 Timing FlatAggrStore::flush_updates - quiescence - kmers: 0.00/0.00/0.00/0.00 s, 0.76 barrier 0.00 s
+2026-07-29 09:01:49 [0] <three_tier_aggr_store.hpp:1346> kmers over 19.3304 s
+	tt_updates: 0/0/0.00/0, bal=1.00 active=8
+	rpcs sent: 0/0/0.00/0, bal=1.00 active=8
+	processed: 0/0/0.00/0, bal=1.00 active=8
+	 tt_remote_bytes=0B per_rank=0B /s per_node=0B /s
+2026-07-29 09:01:49 [0] <three_tier_aggr_store.hpp:1354> kmers Rank 0 had 0 remote node updates
+2026-07-29 09:01:49 [0] <timers.cpp:774> ThreeTierAggrStore::flush_updates - quiescence - kmers utime=0.000527s sys=1.3e-05s tot=0.00054s. 48.7609% of 0.00110744s
+2026-07-29 09:01:49 Timing ThreeTierAggrStore::flush_updates - quiescence - kmers: 0.00/0.00/0.00/0.00 s, 0.97 barrier 0.00 s
+2026-07-29 09:01:49 [0] <timers.cpp:774> ThreeTierAggrStore::flush_updates - local append updates - kmers utime=0.034273s sys=3.3e-05s tot=0.034306s. 67.111% of 0.0511183s
+2026-07-29 09:01:49 Timing ThreeTierAggrStore::flush_updates - local append updates - kmers: 0.05/0.05/0.05/0.05 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:49 After inserting read kmers in hash table:
+2026-07-29 09:01:49   Number of elements: 242361304
+2026-07-29 09:01:49   load factor: 0.278341 avg, 0.278838 max, load balance 0.998
+2026-07-29 09:01:49   probe lengths: 1.19281 avg, 23 max
+2026-07-29 09:01:49 CPU kcount found total of 242361304 unique kmers including singletons and dropped
+2026-07-29 09:01:49   Avg kmers per rank 30295163 (balance 0.998216)
+2026-07-29 09:01:49 [0] <timers.cpp:774> kmer_dht.cpp:flush_updates utime=0.034906s sys=4.8e-05s tot=0.034954s. 67.2941% of 0.0519422s
+2026-07-29 09:01:49 Timing kmer_dht.cpp:flush_updates: 0.05/0.05/0.05/0.05 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:49 Processed a total of 3999906 reads 481289267 raw kmers
+2026-07-29 09:01:49 Avg supermer inserts 14085267 max 14380609 load 0.979
+2026-07-29 09:01:49 Found 48338469 (8.76%) bad quality positions
+2026-07-29 09:01:49 [0] <timers.cpp:774> kcount.cpp:count_kmers utime=18.6412s sys=0.009434s tot=18.6506s. 99.5405% of 18.7367s
+2026-07-29 09:01:49 Timing kcount.cpp:count_kmers: 18.74/18.74/18.74/18.74 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:49 Timing (entrance barrier) kcount_cpu.cpp:insert_into_local_hashtable: 0/0/0/0 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:50 [0] <kcount_cpu.cpp:555> Before inserting into local hashtable Free memory: 472.83GB, stat: Rank0: 1336535 776336 11401 703 0 791330 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 20581 2230 46 0 2127 48 0 1 20 0 2 0 266107 5474447360 776069 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:50 Before inserting into local hashtable free_mem GB: 472.83/472.83/472.83/472.83, bal=1.00 active=8
+2026-07-29 09:01:50 Reserving compact hash table for 4058381 elements, requires 123.85MB
+2026-07-29 09:01:50 [0] <mem_profile.cpp:86>  MemFree:        494803132 kB MemAvailable:   493637912 kB MemAvailable:   493637912 kB Buffers:            4724 kB Cached:          2573984 kB Mapped:           234448 kB Shmem:             74976 kB ShmemHugePages:        0 kB ShmemPmdMapped:        0 kB HugePages_Total:       0 HugePages_Free:        0 HugePages_Rsvd:        0 HugePages_Surp:        0
+2026-07-29 09:01:50 Memory available after compact hash table allocation: 470.77GB, used 2.06GB
+2026-07-29 09:01:50 [0] <kcount_cpu.cpp:564> After reserving for local hashtable Free memory: 470.77GB, stat: Rank0: 1404120 843923 11403 703 0 858915 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 20716 2230 46 0 2127 51 0 1 20 0 2 0 266107 5751275520 843776 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:50 After reserving for local hashtable free_mem GB: 470.77/470.77/470.77/470.77, bal=1.00 active=8
+2026-07-29 09:01:50 [0] <kcount_cpu.cpp:567> High count (max) for kmers: 30681/55892/43638.38/65535, bal=0.67 5:3 active=8
+2026-07-29 09:01:50 [0] <kcount_cpu.cpp:579> High count kmer: k = 21 count = 51444 kmer = ACGTGATCAGTGCATGATCAG
+2026-07-29 09:01:50 [0] <kcount_cpu.cpp:579> High count kmer: k = 21 count = 49767 kmer = ATCATGCACTGATCACGTGGC
+2026-07-29 09:01:50 [0] <kcount_cpu.cpp:579> High count kmer: k = 21 count = 48746 kmer = CACGTGATCAGTGCATGATCA
+2026-07-29 09:01:50 [0] <kcount_cpu.cpp:579> High count kmer: k = 21 count = 55892 kmer = AGCCACGTGATCAGTGCATGA
+2026-07-29 09:01:51 T139761789755392(125033;125001):6 2026-07-29 09:01:50 [0] <mem_profile.cpp:348> MemoryTrackerThread free_mem=470.77GB
+2026-07-29 09:01:50 [7] <kcount_cpu.cpp:579> High count kmer: k = 21 count = 59637 kmer = CCCCCCCCCCCCCCCCCCCCC
+2026-07-29 09:01:51 [3] <kcount_cpu.cpp:579> High count kmer: k = 21 count = 65535 kmer = AAAAAAAAAAAAAAAAAAAAA
+2026-07-29 09:01:51 [0] <kcount_cpu.cpp:602> After inserting into local hashtable Free memory: 470.77GB, stat: Rank0: 1404120 843925 11405 703 0 858915 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 20718 2230 46 0 2239 51 0 1 20 0 2 0 266107 5751275520 843776 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:51 After inserting into local hashtable free_mem GB: 470.77/470.77/470.77/470.77, bal=1.00 active=8
+2026-07-29 09:01:51 CPU Hashtable: purged 216010833 (89.13%) singleton kmers out of 242361304
+2026-07-29 09:01:51 Compact hash table has 3296204 kmers and load factor 0.393 avg 0.393 max
+2026-07-29 09:01:51 For 26350471 kmers, average kmer count (depth): 8.52
+2026-07-29 09:01:51 Total kmer count sum: 224507078
+2026-07-29 09:01:51 [0] <timers.cpp:774> kcount_cpu.cpp:insert_into_local_hashtable utime=1.60294s sys=0.029896s tot=1.63284s. 99.6741% of 1.63818s
+2026-07-29 09:01:51 Timing kcount_cpu.cpp:insert_into_local_hashtable: 1.64/1.64/1.64/1.64 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:51 [0] <kmer_dht.cpp:279> Total time for local hashtables: insert_time=1.62376kernel_time=11.0231
+2026-07-29 09:01:51 Local kmers: 3281532/3296204/3293808.88/3299865, bal=1.00 4:7 active=8
+2026-07-29 09:01:51 Total kmers: 26350471
+2026-07-29 09:01:51 [0] <timers.cpp:774> kcount.cpp:analyze_kmers utime=20.2445s sys=0.040337s tot=20.2848s. 99.5484% of 20.3768s
+2026-07-29 09:01:51 Timing kcount.cpp:analyze_kmers: 20.38/20.38/20.38/20.38 s, 1.00 barrier 0.00 s
+2026-07-29 09:01:51 [0] <contigging.cpp:99> Analyzed kmers Free memory: 470.77GB, stat: Rank0: 1403427 843234 11407 703 0 858222 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 20720 2230 46 0 2239 51 0 1 20 0 2 0 266107 5748436992 843182 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:51 Analyzing kmers                         20.99s 
+2026-07-29 09:01:51 Analyzed kmers free_mem GB: 470.77/470.77/470.77/470.77, bal=1.00 active=8
+2026-07-29 09:01:51 Changing sequencing depth from 4 to 8
+2026-07-29 09:01:51 [0] <contigging.cpp:106> Analyzed kmers Free memory: 470.77GB, stat: Rank0: 1403427 843234 11407 703 0 858222 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 20720 2230 46 0 2239 51 0 1 20 0 2 0 266107 5748436992 843182 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:51 [0] <contigging.cpp:119> Generated contigs k=21 Free memory: 470.77GB, stat: Rank0: 1403427 843234 11407 703 0 858222 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 20720 2230 46 0 2239 51 0 1 20 0 2 0 266107 5748436992 843182 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:51 Analyzed kmers free_mem GB: 470.77/470.77/470.77/470.77, bal=1.00 active=8
+2026-07-29 09:01:51 Generated contigs k=21 free_mem GB: 470.77/470.77/470.77/470.77, bal=1.00 active=8
+2026-07-29 09:01:51 Avg reads per rank 499988 max 500086 (balance 0.999804)
+2026-07-29 09:01:51 _________________________
+2026-07-29 09:01:51 
+2026-07-29 09:01:51 Completed contig round k = 21 in 20.99 s at 07/29/26 09:01:51 (470.77GB free memory on node 0)
+2026-07-29 09:01:51 [0] <contigging.cpp:189> After contig round k = 21 Free memory: 470.77GB, stat: Rank0: 1403427 843234 11407 703 0 858222 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 20720 2230 46 0 2239 51 0 1 20 0 2 0 266107 5748436992 843182 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:51 After contig round k = 21 free_mem GB: 470.77/470.77/470.77/470.77, bal=1.00 active=8
+2026-07-29 09:01:51 [0] <mem_profile.cpp:86>  MemFree:        520617240 kB MemAvailable:   519454076 kB MemAvailable:   519454076 kB Buffers:            4724 kB Cached:          2573984 kB Mapped:           234480 kB Shmem:             74976 kB ShmemHugePages:        0 kB ShmemPmdMapped:        0 kB HugePages_Total:       0 HugePages_Free:        0 HugePages_Rsvd:        0 HugePages_Surp:        0
+2026-07-29 09:01:51 [0] <main.cpp:263> Preparing to close all fastq Free memory: 495.39GB, stat: Rank0: 591803 31611 11408 703 0 46598 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 20721 2230 46 0 2242 52 0 1 20 0 2 0 266107 2424025088 31546 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:51 Preparing to close all fastq free_mem GB: 495.40/495.40/495.40/495.40, bal=1.00 active=8
+2026-07-29 09:01:51 [0] <linear_allocator_pool.cpp:147> Freed blocks size=38 num_allocations=500064 m_used=65.74MB m_peak=65.74MB allocator=32043416
+2026-07-29 09:01:51 [0] <mem_profile.cpp:86>  MemFree:        521248808 kB MemAvailable:   520083596 kB MemAvailable:   520083596 kB Buffers:            4724 kB Cached:          2573984 kB Mapped:           234480 kB Shmem:             74976 kB ShmemHugePages:        0 kB ShmemPmdMapped:        0 kB HugePages_Total:       0 HugePages_Free:        0 HugePages_Rsvd:        0 HugePages_Surp:        0
+2026-07-29 09:01:51 [0] <main.cpp:270> Closed all fastq Free memory: 495.99GB, stat: Rank0: 548740 12726 11408 703 0 3535 0
+125001 (mhm2) R 124556 124556 105908 34816 124556 4194560 20721 2230 46 0 2242 53 0 1 20 0 2 0 266107 2247639040 12574 18446744073709551615 4235264 7114473 140732126337920 0 0 0 0 16777216 268457199 0 0 0 17 35 0 0 0 0 0 8057768 8076044 31682560 140732126339991 140732126340505 140732126340505 140732126359449 0
+2026-07-29 09:01:51 Closed all fastq free_mem GB: 495.99/495.99/495.99/495.99, bal=1.00 active=8
+2026-07-29 09:01:51 _________________________
+2026-07-29 09:01:51 Stage timing:
+2026-07-29 09:01:51     Initialization: 1.91605
+2026-07-29 09:01:51     stage_timers.hpp:Merge reads: 1.90 s
+2026-07-29 09:01:51     stage_timers.hpp:Analyze kmers: 20.99 s
+2026-07-29 09:01:51     FASTQ total read time: 0.305327
+2026-07-29 09:01:51     merged FASTQ write time: 2.4e-07
+2026-07-29 09:01:51     Contigs write time: 0
+2026-07-29 09:01:51 _________________________
+2026-07-29 09:01:51 [0] <mem_profile.cpp:444> Activity rank=0 count=5 avg=4.5985 +- 0.681747 min=3.44283 max=5.02205 not responding for 5.02205 s starting at 8.4651 s ago at 2026-07-29 09:01:38
+2026-07-29 09:01:51 [0] <mem_profile.cpp:444> Activity rank=1 count=5 avg=4.5985 +- 0.681594 min=3.44283 max=5.01609 not responding for 5.01609 s starting at 13.4703 s ago at 2026-07-29 09:01:33
+2026-07-29 09:01:51 [0] <mem_profile.cpp:444> Activity rank=2 count=5 avg=4.59854 +- 0.681569 min=3.44305 max=5.0227 not responding for 5.0227 s starting at 8.46579 s ago at 2026-07-29 09:01:38
+2026-07-29 09:01:51 [0] <mem_profile.cpp:444> Activity rank=3 count=5 avg=4.59849 +- 0.681235 min=3.44283 max=5.01934 not responding for 5.01934 s starting at 13.4736 s ago at 2026-07-29 09:01:33
+2026-07-29 09:01:51 [0] <mem_profile.cpp:444> Activity rank=4 count=5 avg=4.5985 +- 0.680584 min=3.44283 max=5.01934 not responding for 5.01934 s starting at 13.4736 s ago at 2026-07-29 09:01:33
+2026-07-29 09:01:51 [0] <mem_profile.cpp:444> Activity rank=5 count=5 avg=4.59849 +- 0.677921 min=3.44283 max=5.0227 not responding for 5.0227 s starting at 8.46582 s ago at 2026-07-29 09:01:38
+2026-07-29 09:01:51 [0] <mem_profile.cpp:444> Activity rank=6 count=5 avg=4.59849 +- 0.682079 min=3.44283 max=5.02178 not responding for 5.02178 s starting at 8.46491 s ago at 2026-07-29 09:01:38
+2026-07-29 09:01:51 [0] <mem_profile.cpp:444> Activity rank=7 count=5 avg=4.59849 +- 0.681282 min=3.44283 max=5.0227 not responding for 5.0227 s starting at 8.46584 s ago at 2026-07-29 09:01:38
+2026-07-29 09:01:51 [0] <mem_profile.cpp:456> Activity rpc sent rank=0 count=5 avg=4.59849 +- 0.681744 min=3.44283 max=5.02204 responding for 5.02204 s starting at 8.4652 s ago at 2026-07-29 09:01:38
+2026-07-29 09:01:51 [0] <mem_profile.cpp:467> Activity delay avg=4.5985 max=5.0227 bal=1.09225 avg stddev=0.681001 max stddev=0.682079 bal=1.00158
+2026-07-29 09:01:51 Activity delay overall avg=4.5985 max=5.0227 bal=1.09225 avg stddev=0.681001 max stddev=0.682079 bal=1.00158
+2026-07-29 09:01:51 Peak memory used across all 1 nodes: 25.35GB (25.35GB avg, 25.35GB min, 25.35GB max)
+2026-07-29 09:01:51 Finished in 23.00 s at 07/29/26 09:01:51 for 2.2.0.0.mhm2-kmer-analysis-proxy-v0.9.0-43-g18f6e6db-dirty
+2026-07-29 09:01:51 [0] <main.cpp:519> Cleaning up and completing remaining tasks
+2026-07-29 09:01:51 [0] <main.cpp:523> Done waiting for all pending.
+2026-07-29 09:01:51 [0] <main.cpp:525> All ranks done. Flushing logs and finalizing.
+2026-07-29 09:01:51 Total time before close and finalize: 23.1189
+2026-07-29 09:01:51 All ranks flushed logs: 0.00/0.00/0.00/0.00 s, 0.58

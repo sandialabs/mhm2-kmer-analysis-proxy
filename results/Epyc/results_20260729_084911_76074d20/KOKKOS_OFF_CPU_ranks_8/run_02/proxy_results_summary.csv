@@ -1,0 +1,2 @@
+Reads,Unique kmers,Total kmers,Fraction of Unique Kmers,Peak Memory (GB),Timing (seconds),Pipeline timing (seconds)
+4000000,26350471,224507078,0.117,25.35,0.00,22.95
