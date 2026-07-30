@@ -138,10 +138,9 @@ For benchmark runs on El Dorado with preconfigured inputs and install paths:
 ./scripts/run.sh
 RUN_BENCHMARK_LOOP=1 ./scripts/run.sh
 BACKEND=CPU KOKKOS_USE=KOKKOS_OFF RUN_BENCHMARK_LOOP=1 ./scripts/run.sh
-# Kokkos::OpenMP: fixed OMP_NUM_THREADS=2 per rank (override OMP_THREADS_PER_RANK),
-# OMP_PROC_BIND=close, OMP_PLACES=cores, --pin=spread.
+# Kokkos::OpenMP: --pin=spread; fair-share KOKKOS_NUM_THREADS=clamp(cores/ranks,2,16); OMP_* unset.
 BACKEND=CPU KOKKOS_USE=KOKKOS_ON RUN_BENCHMARK_LOOP=1 ./scripts/run.sh
-# Optional: OMP_THREADS_PER_RANK=4 MHM2_PIN=core ...
+# Optional: OMP_NUM_THREADS_FIXED=4 MHM2_PIN=none ...
 ```
 
 Environment variables:
@@ -153,10 +152,10 @@ Environment variables:
 | `NUM_RANKS` | Number of UPC++ ranks (default: 2) |
 | `NUM_RUNS` | Replicates per rank count (default: 3) |
 | `RUN_BENCHMARK_LOOP` | If set, sweep ranks 1, 2, 4, …, 16 |
-| `OMP_THREADS_PER_RANK` | CPU + `KOKKOS_ON`: OpenMP threads per UPC++ rank (default: `2`; capped by `physical_cores / NUM_RANKS`) |
-| `OMP_PROC_BIND` | CPU + `KOKKOS_ON`: default `close` |
-| `OMP_PLACES` | CPU + `KOKKOS_ON`: default `cores` |
-| `MHM2_PIN` | CPU + `KOKKOS_ON`: default `spread` (partition **physical cores** across local ranks before Kokkos/OpenMP init; keeps SMT siblings together). Other backends default to `none`. |
+| `OMP_THREADS_PER_RANK` | CPU + `KOKKOS_ON`: max OpenMP threads per rank (default: `16`; fair-share uses `min(max, cores/ranks)`) |
+| `OMP_THREADS_MIN` | CPU + `KOKKOS_ON`: min OpenMP threads per rank after fair-share (default: `2`) |
+| `OMP_NUM_THREADS_FIXED` | CPU + `KOKKOS_ON`: if set, use this exact team size at every rank count (skip fair-share) |
+| `MHM2_PIN` | CPU + `KOKKOS_ON`: default `spread` (partition physical cores across local ranks before Kokkos/OpenMP init). Other backends default to `none`. |
 
 Results land under `results/<BACKEND>/results_<timestamp>_<hash>/` with per-rank dirs named `KOKKOS_{ON|OFF}_{BACKEND}_ranks_<N>` (for example `KOKKOS_ON_CPU_ranks_4/`). Each run writes `proxy_results_summary.csv` (read counts, kmer statistics, peak memory, timing).
 
@@ -177,6 +176,18 @@ At higher rank counts, Kokkos shows a modest advantage. This is not from faster 
 Kokkos outperforms native HIP at all tested ranks. We attribute this to unified CPU–GPU memory together with the native path’s first-touch memset / preallocation cost. The Kokkos implementation does not pre-allocate in the same way and can keep host- and device-visible data in a single shared allocation, so `deep_copy` is effectively a no-op on this platform.
 
 ![Pipeline timing on AMD MI300A: HIP vs Kokkos::HIP](docs/figures/pipeline_timing_hip_vs_kokkos.png)
+
+### NVIDIA Grace (Serial vs Kokkos::OpenMP)
+
+Kokkos::OpenMP outperforms the serial `kcount_cpu` path at all tested ranks (1–16). The largest gains are at low rank counts, where a fat OpenMP team can use the Grace cores within a single UPC++ process; as ranks increase, work is already distributed across processes and the gap narrows.
+
+![Pipeline timing on NVIDIA Grace: Serial vs Kokkos::OpenMP](docs/figures/pipeline_timing_grace_vs_kokkos.png)
+
+### AMD EPYC 7543P (Serial vs Kokkos::OpenMP)
+
+Kokkos::OpenMP outperforms the serial `kcount_cpu` path at low-to-mid ranks when run with a fair-share OpenMP team (`cores/ranks`, clamped to 2–16 threads per UPC++ rank), process pinning via `--pin=spread`, and no `OMP_PROC_BIND` / `OMP_PLACES` (team size set only through `KOKKOS_NUM_THREADS`). At higher ranks the two paths converge as each rank’s OpenMP team shrinks. Peak memory is also substantially lower for the Kokkos build.
+
+![Pipeline timing on AMD EPYC 7543P: Serial vs Kokkos::OpenMP](docs/figures/pipeline_timing_cpu_vs_kokkos.png)
 
 ## Docker (experimental)
 

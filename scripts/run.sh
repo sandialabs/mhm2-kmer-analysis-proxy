@@ -70,14 +70,18 @@ export NUM_RUNS=${NUM_RUNS:=3}
 # install provides smp/ibv/mpi/udp (default smp); "ofi" is NOT available.
 export RUN_NETWORK="${RUN_NETWORK:=smp}"
 
-# OpenMP / Kokkos::OpenMP threading (CPU + KOKKOS_ON).
-# Default: fixed 2 threads per UPC++ rank. Override with OMP_THREADS_PER_RANK.
-# With RUN_OMP_THREAD_LOOP set, sweep OMP_THREADS_PER_RANK from 16 down to 1.
-# Still never exceeds physical_cores/NUM_RANKS (fair share).
-export OMP_PROC_BIND="${OMP_PROC_BIND:-close}"
-export OMP_PLACES="${OMP_PLACES:-cores}"
-export OMP_WAIT_POLICY="${OMP_WAIT_POLICY:-passive}"
-export OMP_THREADS_PER_RANK="${OMP_THREADS_PER_RANK:-2}"
+# Kokkos::OpenMP threading (CPU + KOKKOS_ON).
+# Default (best measured on EPYC 7543P):
+#   unset all OMP_* (no OMP_PROC_BIND / OMP_PLACES — they fight --pin)
+#   --pin=spread
+#   KOKKOS_NUM_THREADS = clamp(cores / ranks, OMP_THREADS_MIN, OMP_THREADS_PER_RANK)
+#   defaults: max 16 (low ranks), min 2 (high ranks) — e.g. 16,16,8,5,4,3,2,2,2
+#
+# Optional overrides:
+#   OMP_NUM_THREADS_FIXED=N  -> constant KOKKOS_NUM_THREADS at every rank count
+#   MHM2_PIN=none|core|...   -> change/disable process pinning
+export OMP_THREADS_PER_RANK="${OMP_THREADS_PER_RANK:-16}"
+export OMP_THREADS_MIN="${OMP_THREADS_MIN:-2}"
 
 _physical_cores() {
   # Unique physical core IDs from lscpu; fall back to nproc.
@@ -90,41 +94,89 @@ _physical_cores() {
   fi
 }
 
+_unset_all_omp_env() {
+  # Drop OpenMP runtime OMP_* vars (modules/shell often inject these).
+  # Keep script controls: OMP_THREADS_PER_RANK, OMP_THREADS_MIN, OMP_NUM_THREADS_FIXED.
+  local var
+  for var in $(compgen -e OMP_ 2>/dev/null || true); do
+    case "${var}" in
+      OMP_THREADS_PER_RANK|OMP_THREADS_MIN|OMP_NUM_THREADS_FIXED) continue ;;
+    esac
+    unset "${var}"
+  done
+  # Bash <4.2 may miss some; clear the usual suspects explicitly.
+  unset OMP_NUM_THREADS OMP_PROC_BIND OMP_PLACES OMP_WAIT_POLICY \
+        OMP_DYNAMIC OMP_SCHEDULE OMP_STACKSIZE OMP_DISPLAY_ENV \
+        OMP_NESTED OMP_MAX_ACTIVE_LEVELS OMP_THREAD_LIMIT \
+        OMP_CANCELLATION OMP_DEFAULT_DEVICE OMP_MAX_TASK_PRIORITY \
+        OMP_DISPLAY_AFFINITY OMP_AFFINITY_FORMAT GOMP_CPU_AFFINITY
+}
+
 _configure_openmp_for_ranks() {
   local ranks=$1
   local kokkos_use=$2
 
-  # Serial / GPU builds: do not leave a large OpenMP pool lying around.
+  # Snapshot script controls before clearing OMP_* (names also match OMP_*).
+  local threads_max="${OMP_THREADS_PER_RANK:-16}"
+  local threads_min="${OMP_THREADS_MIN:-2}"
+  local threads_fixed="${OMP_NUM_THREADS_FIXED:-}"
+
+  _unset_all_omp_env
+  unset KOKKOS_NUM_THREADS
+
+  # Serial / GPU builds: leave Kokkos OpenMP unconfigured.
   if [ "${BACKEND}" != "CPU" ] || [ "${kokkos_use}" != "KOKKOS_ON" ]; then
-    export OMP_NUM_THREADS=1
-    echo "    OpenMP: OMP_NUM_THREADS=1 (not using Kokkos::OpenMP)"
+    echo "    Threads: OMP_* unset, KOKKOS_NUM_THREADS unset (not using Kokkos::OpenMP)"
     return
   fi
 
   local ncores
   ncores="$(_physical_cores)"
-  local fair=$((ncores / ranks))
-  if [ "${fair}" -lt 1 ]; then
-    fair=1
+  if ! [[ "${ncores}" =~ ^[1-9][0-9]*$ ]]; then
+    ncores="$(nproc)"
+  fi
+  if ! [[ "${ranks}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "    WARNING: invalid rank count '${ranks}', defaulting to 1" >&2
+    ranks=1
   fi
 
-  local threads="${OMP_THREADS_PER_RANK}"
-  if [ -n "${OMP_NUM_THREADS_FIXED:-}" ]; then
-    threads="${OMP_NUM_THREADS_FIXED}"
+  local threads
+  if [ -n "${threads_fixed}" ]; then
+    threads="${threads_fixed}"
+  else
+    # Fair-share: cores/ranks, clamped to [OMP_THREADS_MIN, OMP_THREADS_PER_RANK].
+    if ! [[ "${threads_max}" =~ ^[1-9][0-9]*$ ]]; then
+      threads_max=16
+    fi
+    if ! [[ "${threads_min}" =~ ^[1-9][0-9]*$ ]]; then
+      threads_min=2
+    fi
+    if [ "${threads_min}" -gt "${threads_max}" ]; then
+      threads_min="${threads_max}"
+    fi
+    threads=$((ncores / ranks))
+    if [ "${threads}" -lt 1 ]; then
+      threads=1
+    fi
+    if [ "${threads}" -gt "${threads_max}" ]; then
+      threads="${threads_max}"
+    fi
+    if [ "${threads}" -lt "${threads_min}" ]; then
+      threads="${threads_min}"
+    fi
   fi
-  # Never oversubscribe physical cores across ranks.
-  if [ "${threads}" -gt "${fair}" ]; then
-    threads="${fair}"
-  fi
-  if [ "${threads}" -lt 1 ]; then
-    threads=1
+  # Guard empty/non-numeric (Kokkos aborts on KOKKOS_NUM_THREADS=0).
+  if ! [[ "${threads}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "    WARNING: invalid thread count '${threads}', defaulting to 2" >&2
+    threads=2
   fi
 
-  export OMP_NUM_THREADS="${threads}"
-  # Kokkos OpenMP backend also honors this when set.
-  export KOKKOS_NUM_THREADS="${OMP_NUM_THREADS}"
-
-  echo "    OpenMP: OMP_NUM_THREADS=${OMP_NUM_THREADS}  OMP_PROC_BIND=${OMP_PROC_BIND}  OMP_PLACES=${OMP_PLACES}  (cores=${ncores}, fair=${fair}, ranks=${ranks})"
+  export KOKKOS_NUM_THREADS="${threads}"
+  if [ -n "${threads_fixed}" ]; then
+    echo "    Threads: KOKKOS_NUM_THREADS=${KOKKOS_NUM_THREADS}  (fixed; OMP_* unset; cores=${ncores}, ranks=${ranks})"
+  else
+    echo "    Threads: KOKKOS_NUM_THREADS=${KOKKOS_NUM_THREADS}  (fair-share clamp [${threads_min},${threads_max}]; OMP_* unset; cores=${ncores}, ranks=${ranks})"
+  fi
 }
 
 RUN_TS=$(date +"%Y%m%d_%H%M%S")
@@ -140,13 +192,13 @@ echo "Results batch: ${RESULTS_DIR}"
 echo "CSV output:    ${CSV_DIR}"
 echo "Runs per rank: ${NUM_RUNS}"
 if [ "${BACKEND}" = "CPU" ] && [ "${KOKKOS_USE}" = "KOKKOS_ON" ]; then
-  echo "OpenMP bind:   OMP_PROC_BIND=${OMP_PROC_BIND} OMP_PLACES=${OMP_PLACES}"
-  if [ -n "${RUN_OMP_THREAD_LOOP:-}" ]; then
-    echo "OpenMP threads: sweep 16..1 (capped by cores/ranks)"
+  echo "OpenMP env:    all OMP_* unset (no OMP_PROC_BIND / OMP_PLACES)"
+  if [ -n "${OMP_NUM_THREADS_FIXED:-}" ]; then
+    echo "Kokkos threads: fixed OMP_NUM_THREADS_FIXED=${OMP_NUM_THREADS_FIXED} -> KOKKOS_NUM_THREADS (all ranks)"
   else
-    echo "OpenMP threads: fixed OMP_THREADS_PER_RANK=${OMP_THREADS_PER_RANK} (capped by cores/ranks)"
+    echo "Kokkos threads: fair-share cores/ranks, clamp [${OMP_THREADS_MIN},${OMP_THREADS_PER_RANK}] -> KOKKOS_NUM_THREADS"
   fi
-  echo "CPU pin:       --pin=\${MHM2_PIN:-spread} (partition physical cores across ranks before Kokkos/OpenMP init)"
+  echo "CPU pin:       --pin=\${MHM2_PIN:-spread} (partition physical cores across ranks before Kokkos init)"
 fi
 echo
 echo "========== lscpu =========="
@@ -166,12 +218,10 @@ _run_proxy() {
   local result_label="${KOKKOS_USE}_${BACKEND}"
   local install_dir="${ROOT}/install_${BACKEND}_${KOKKOS_USE}"
   local mhm2_bin="${install_dir}/bin/mhm2"
-  local out_suffix="ranks_${NUM_RANKS}"
-  if [ "${BACKEND}" = "CPU" ] && [ "${KOKKOS_USE}" = "KOKKOS_ON" ] && [ -n "${RUN_OMP_THREAD_LOOP:-}" ]; then
-    out_suffix="${out_suffix}_threads_${OMP_THREADS_PER_RANK}"
+  local tag_threads=0
+  if [ "${BACKEND}" = "CPU" ] && [ "${KOKKOS_USE}" = "KOKKOS_ON" ] && [ -n "${RUN_BENCHMARK_LOOP:-}" ]; then
+    tag_threads=1
   fi
-  local rank_output="${RESULTS_DIR}/${result_label}_${out_suffix}"
-  mkdir -p "${rank_output}"
 
   if [ ! -x "${mhm2_bin}" ]; then
     echo "Missing executable: ${mhm2_bin}" >&2
@@ -181,8 +231,20 @@ _run_proxy() {
 
   _configure_openmp_for_ranks "${NUM_RANKS}" "${KOKKOS_USE}"
 
-  # CPU + Kokkos::OpenMP: partition CPUs across ranks before OpenMP binds
-  # (see pin_spread + Kokkos init after affinity in main.cpp).
+  # Tag after configure so the label reflects team size (or "auto").
+  local thread_tag="auto"
+  if [ -n "${KOKKOS_NUM_THREADS:-}" ]; then
+    thread_tag="${KOKKOS_NUM_THREADS}"
+  fi
+  local out_suffix="ranks_${NUM_RANKS}"
+  if [ "${tag_threads}" -eq 1 ]; then
+    out_suffix="${out_suffix}_threads_${thread_tag}"
+  fi
+  local rank_output="${RESULTS_DIR}/${result_label}_${out_suffix}"
+  mkdir -p "${rank_output}"
+
+  # CPU + Kokkos::OpenMP: partition cores across ranks, then OpenMP binds within
+  # that mask (OMP_PROC_BIND=spread OMP_PLACES=threads). Other backends: none.
   local pin_arg="--pin=none"
   if [ "${BACKEND}" = "CPU" ] && [ "${KOKKOS_USE}" = "KOKKOS_ON" ]; then
     pin_arg="--pin=${MHM2_PIN:-spread}"
@@ -196,7 +258,7 @@ _run_proxy() {
     export PROXY_OUTPUT="${rank_output}/${run_label}"
     mkdir -p "${PROXY_OUTPUT}"
 
-    echo "--- ${result_label} ranks=${NUM_RANKS} threads=${OMP_NUM_THREADS:-1} ${run_label} ---"
+    echo "--- ${result_label} ranks=${NUM_RANKS} KOKKOS_NUM_THREADS=${KOKKOS_NUM_THREADS:-unset} ${run_label} ---"
     echo "    binary: ${mhm2_bin}"
     echo "    output: ${PROXY_OUTPUT}"
     echo "    pin:    ${pin_arg}"
@@ -216,8 +278,8 @@ _run_proxy() {
     for csv_file in "${ROOT}"/*.csv; do
       base=$(basename "${csv_file}" .csv)
       local csv_name="${base}_ranks_${NUM_RANKS}_${run_label}.csv"
-      if [ "${BACKEND}" = "CPU" ] && [ "${KOKKOS_USE}" = "KOKKOS_ON" ] && [ -n "${RUN_OMP_THREAD_LOOP:-}" ]; then
-        csv_name="${base}_ranks_${NUM_RANKS}_threads_${OMP_THREADS_PER_RANK}_${run_label}.csv"
+      if [ "${tag_threads}" -eq 1 ]; then
+        csv_name="${base}_ranks_${NUM_RANKS}_threads_${thread_tag}_${run_label}.csv"
       fi
       cp "${csv_file}" "${CSV_DIR}/${csv_name}"
       rm -f "${csv_file}"
@@ -242,25 +304,20 @@ _run_once() {
   fi
 }
 
-_run_with_optional_omp_thread_loop() {
-  # OpenMP thread sweep (CPU + KOKKOS_ON): 16, 15, …, 1
-  if [ -n "${RUN_OMP_THREAD_LOOP:-}" ] && [ "${BACKEND}" = "CPU" ] && [ "${KOKKOS_USE}" = "KOKKOS_ON" ]; then
-    for OMP_THREADS_PER_RANK in $(seq 16 -1 1); do
-      export OMP_THREADS_PER_RANK
-      _run_once
-    done
-  else
-    _run_once
-  fi
-}
-
-# Small — scale 1, 2, 4, 6, …, 16 ranks when RUN_BENCHMARK_LOOP is set.
-# With RUN_OMP_THREAD_LOOP, also sweep OpenMP threads 16..1 per rank count.
+# Small — scale ranks 1, 2, 4, …, 16 when RUN_BENCHMARK_LOOP is set.
+# CPU + KOKKOS_ON: fair-share threads (default clamp [2,16]) unless OMP_NUM_THREADS_FIXED.
 if [ -n "${RUN_BENCHMARK_LOOP}" ]; then
   for NUM_RANKS in 1 $(seq 2 2 16); do
     export NUM_RANKS
-    _run_with_optional_omp_thread_loop
+    if [ "${BACKEND}" = "CPU" ] && [ "${KOKKOS_USE}" = "KOKKOS_ON" ]; then
+      if [ -n "${OMP_NUM_THREADS_FIXED:-}" ]; then
+        echo "=== ranks=${NUM_RANKS} (OpenMP fixed ${OMP_NUM_THREADS_FIXED}) ==="
+      else
+        echo "=== ranks=${NUM_RANKS} (OpenMP fair-share clamp [${OMP_THREADS_MIN},${OMP_THREADS_PER_RANK}]) ==="
+      fi
+    fi
+    _run_once
   done
 else
-  _run_with_optional_omp_thread_loop
+  _run_once
 fi

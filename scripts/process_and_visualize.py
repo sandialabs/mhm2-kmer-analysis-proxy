@@ -11,7 +11,9 @@ import pandas as pd
 import seaborn as sns
 
 
-OUTPUT_DIR_PATTERN = re.compile(r"^KOKKOS_(ON|OFF)_(.+)_ranks_(\d+)$")
+OUTPUT_DIR_PATTERN = re.compile(
+    r"^KOKKOS_(ON|OFF)_(.+)_ranks_(\d+)(?:_threads_([A-Za-z0-9]+))?$"
+)
 RUN_DIR_PATTERN = re.compile(r"^run_(\d+)$")
 MERGED_CSV_NAME = "results.csv"
 SUMMARY_CSV_NAME = "proxy_results_summary.csv"
@@ -73,6 +75,11 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=None,
         help="Save the chart to this file (e.g. proxy_results.png)",
+    )
+    parser.add_argument(
+        "--title",
+        default=None,
+        help="Override the chart title (default: derived from backend / Kokkos config)",
     )
     parser.add_argument(
         "--show",
@@ -189,7 +196,7 @@ def display_impl_label(kokkos_use: str, backend: Optional[str] = None) -> str:
         if normalized == "KOKKOS_ON":
             return "Kokkos::OpenMP"
         if normalized == "KOKKOS_OFF":
-            return "Serial"
+            return "UPC++ (host-only)"
     if normalized == "KOKKOS_ON":
         return f"KOKKOS::{backend_label}" if backend else "KOKKOS"
     if normalized == "KOKKOS_OFF":
@@ -212,7 +219,7 @@ def build_chart_title(
         if len(kokkos_values) == 1:
             resolved_kokkos = kokkos_values[0]
 
-    # Prefer human-facing labels (Serial / Kokkos::OpenMP on CPU).
+    # Prefer human-facing labels (UPC++ (host-only) / Kokkos::OpenMP on CPU).
     if resolved_kokkos is not None:
         label = display_impl_label(resolved_kokkos, resolved_backend)
         return f"MHM2 Kmer Analysis Proxy ({label})"
@@ -286,7 +293,7 @@ def merge_csv_files(
         if not match:
             continue
 
-        run_kokkos, run_backend, ranks_str = match.groups()
+        run_kokkos, run_backend, ranks_str, _threads_str = match.groups()
         run_kokkos_label = normalize_kokkos_use(run_kokkos)
         if kokkos_use and run_kokkos_label != normalize_kokkos_use(kokkos_use):
             continue
@@ -363,7 +370,7 @@ def batch_has_kokkos_config(
         if not match:
             continue
 
-        run_kokkos, run_backend, _ = match.groups()
+        run_kokkos, run_backend, _ranks_str, _threads_str = match.groups()
         if normalize_kokkos_use(run_kokkos) != normalize_kokkos_use(kokkos_use):
             continue
         if not output_dir_matches_backend(output_dir, run_backend, backend):
@@ -450,7 +457,7 @@ def load_results(
         if not match:
             continue
 
-        run_kokkos, run_backend, ranks_str = match.groups()
+        run_kokkos, run_backend, ranks_str, _threads_str = match.groups()
         run_kokkos_label = normalize_kokkos_use(run_kokkos)
         if kokkos_use and run_kokkos_label != normalize_kokkos_use(kokkos_use):
             continue
@@ -511,13 +518,13 @@ COMPARE_COLORS = {
     "KOKKOS": "#1E90FF",
     "CUDA": "#FF4D6D",
     "HIP": "#FF4D6D",
-    "Serial": "#FF4D6D",
+    "UPC++ (host-only)": "#FF4D6D",
     "CPU": "#FF4D6D",
 }
 COMPARE_HUE_ORDER = (
     "CUDA",
     "HIP",
-    "Serial",
+    "UPC++ (host-only)",
     "CPU",
     "KOKKOS::CUDA",
     "KOKKOS::HIP",
@@ -716,6 +723,9 @@ def main() -> None:
                 f"{resolve_batch_dir(root, args.batch_dir)}"
             )
         title = build_chart_title(data, args.kokkos_use, args.backend)
+
+    if args.title:
+        title = args.title
 
     pipeline_col = "Pipeline timing (seconds)"
     memory_col = "Peak Memory (GB)"
