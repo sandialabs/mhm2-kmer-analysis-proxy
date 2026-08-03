@@ -159,35 +159,17 @@ Environment variables:
 
 Results land under `results/<BACKEND>/results_<timestamp>_<hash>/` with per-rank dirs named `KOKKOS_{ON|OFF}_{BACKEND}_ranks_<N>` (for example `KOKKOS_ON_CPU_ranks_4/`). Each run writes `proxy_results_summary.csv` (read counts, kmer statistics, peak memory, timing).
 
-Aggregate and plot batch results with `scripts/process_and_visualize.py` (for example `--compare --backend CUDA` or `--compare --backend CPU`).
+Aggregate and plot batch results with `scripts/process_and_visualize.py` (for example `--compare --results-group H100 --backend CUDA`). Compare charts put the hardware name first in the legend (`--hardware`, or inferred from `--results-group`).
 
 ## Performance
 
-Pipeline timing for the kmer-analysis stage (DHT construction), comparing the native vendor backend with Kokkos across 1–16 UPC++ ranks. Bars show mean pipeline time; error bars indicate run-to-run variation where multiple replicates were collected.
+Mean execution times of *mhm2-proxy* showing Kokkos versus native kmer-analysis performance across 1–16 UPC++ ranks (error bars: three-run standard deviation). **(a)** CUDA vs Kokkos::CUDA on NVIDIA Hopper. **(b)** HIP vs Kokkos::HIP on AMD MI300a. **(c)** Host-only UPC++ vs Kokkos::OpenMP on NVIDIA Grace. **(d)** Same as (c) on AMD Epyc.
 
-### NVIDIA H100 (CUDA vs Kokkos::CUDA)
+![Kokkos vs native pipeline timing on Hopper, MI300a, Grace, and Epyc](docs/figures/pipeline_timing_cpu_gpu_vs_kokkos.png)
 
-At higher rank counts, Kokkos shows a modest advantage. This is not from faster Kokkos kernels — the CUDA `analyze_kmers` phase remains slightly faster. The native CUDA path pays a per-rank GPU first-touch cost (`cudaMalloc` followed by a full `cudaMemset` over roughly 80% of each rank’s share of device memory). That overhead grows as multiple ranks share a single H100; the Kokkos build does not use the same warmup path.
+On Hopper, Kokkos matches native CUDA and pulls ahead at higher rank counts; the native path pays a growing per-rank GPU first-touch cost (`cudaMalloc` / full `cudaMemset`) that Kokkos avoids. On MI300a, Kokkos is faster at all ranks, helped by unified memory and skipping the native path’s first-touch preallocation. On Grace and Epyc, Kokkos::OpenMP wins strongly at low ranks; the gap narrows as work is already split across UPC++ ranks and each OpenMP team shrinks (Epyc runs use fair-share `KOKKOS_NUM_THREADS` with `--pin=spread`). Peak memory is also substantially lower for the Kokkos CPU builds.
 
-![Pipeline timing on NVIDIA H100: CUDA vs Kokkos::CUDA](docs/figures/pipeline_timing_cuda_vs_kokkos.png)
-
-### AMD MI300A (HIP vs Kokkos::HIP)
-
-Kokkos outperforms native HIP at all tested ranks. We attribute this to unified CPU–GPU memory together with the native path’s first-touch memset / preallocation cost. The Kokkos implementation does not pre-allocate in the same way and can keep host- and device-visible data in a single shared allocation, so `deep_copy` is effectively a no-op on this platform.
-
-![Pipeline timing on AMD MI300A: HIP vs Kokkos::HIP](docs/figures/pipeline_timing_hip_vs_kokkos.png)
-
-### NVIDIA Grace (Serial vs Kokkos::OpenMP)
-
-Kokkos::OpenMP outperforms the serial `kcount_cpu` path at all tested ranks (1–16). The largest gains are at low rank counts, where a fat OpenMP team can use the Grace cores within a single UPC++ process; as ranks increase, work is already distributed across processes and the gap narrows.
-
-![Pipeline timing on NVIDIA Grace: Serial vs Kokkos::OpenMP](docs/figures/pipeline_timing_grace_vs_kokkos.png)
-
-### AMD EPYC 7543P (Serial vs Kokkos::OpenMP)
-
-Kokkos::OpenMP outperforms the serial `kcount_cpu` path at low-to-mid ranks when run with a fair-share OpenMP team (`cores/ranks`, clamped to 2–16 threads per UPC++ rank), process pinning via `--pin=spread`, and no `OMP_PROC_BIND` / `OMP_PLACES` (team size set only through `KOKKOS_NUM_THREADS`). At higher ranks the two paths converge as each rank’s OpenMP team shrinks. Peak memory is also substantially lower for the Kokkos build.
-
-![Pipeline timing on AMD EPYC 7543P: Serial vs Kokkos::OpenMP](docs/figures/pipeline_timing_cpu_vs_kokkos.png)
+Individual panels: [Hopper](docs/figures/pipeline_timing_cuda_vs_kokkos.png), [MI300a](docs/figures/pipeline_timing_hip_vs_kokkos.png), [Grace](docs/figures/pipeline_timing_grace_vs_kokkos.png), [Epyc](docs/figures/pipeline_timing_cpu_vs_kokkos.png).
 
 ## Docker (experimental)
 

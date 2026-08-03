@@ -82,11 +82,31 @@ def parse_args() -> argparse.Namespace:
         help="Override the chart title (default: derived from backend / Kokkos config)",
     )
     parser.add_argument(
+        "--hardware",
+        default=None,
+        help=(
+            "Hardware architecture label placed first in the compare-chart legend "
+            "(e.g. 'NVIDIA Hopper'). If omitted with --results-group, a default is inferred."
+        ),
+    )
+    parser.add_argument(
         "--show",
         action="store_true",
         help="Display the chart interactively",
     )
     return parser.parse_args()
+
+
+# Default legend hardware labels for common results/<GROUP>/ directories.
+RESULTS_GROUP_HARDWARE = {
+    "H100": "NVIDIA Hopper",
+    "CUDA": "NVIDIA Hopper",
+    "MI300": "AMD MI300a",
+    "HIP": "AMD MI300a",
+    "Grace": "NVIDIA Grace",
+    "Epyc": "AMD Epyc",
+    "CPU": "AMD Epyc",
+}
 
 
 def _is_batch_dir(path: Path) -> bool:
@@ -538,7 +558,7 @@ ERRORBAR_CAPTHICK = 1.8
 ERRORBAR_POINT_CAPSIZE = 5
 
 
-def plot_results(data: pd.DataFrame, title: str, output: Optional[Path], show: bool) -> None:
+def plot_results(data: pd.DataFrame, _title: str, output: Optional[Path], show: bool) -> None:
     pipeline_col = "Pipeline timing (seconds)"
     memory_col = "Peak Memory (GB)"
 
@@ -565,9 +585,8 @@ def plot_results(data: pd.DataFrame, title: str, output: Optional[Path], show: b
         ax=ax_pipeline,
     )
     ax_pipeline.set_xlabel("UPC++ Ranks")
-    ax_pipeline.set_ylabel("Runtime(sec)", color=PIPELINE_COLOR)
+    ax_pipeline.set_ylabel("Runtime (seconds)", color=PIPELINE_COLOR)
     ax_pipeline.tick_params(axis="y", labelcolor=PIPELINE_COLOR)
-    ax_pipeline.set_title(title)
     ax_pipeline.set_axisbelow(True)
     ax_pipeline.grid(
         axis="y",
@@ -616,9 +635,10 @@ def plot_results(data: pd.DataFrame, title: str, output: Optional[Path], show: b
 
 def plot_compare_results(
     data: pd.DataFrame,
-    title: str,
+    _title: str,
     output: Optional[Path],
     show: bool,
+    hardware: Optional[str] = None,
 ) -> None:
     pipeline_col = "Pipeline timing (seconds)"
 
@@ -665,8 +685,7 @@ def plot_compare_results(
         ax=ax,
     )
     ax.set_xlabel("UPC++ Ranks")
-    ax.set_ylabel("Runtime(sec)")
-    ax.set_title(title)
+    ax.set_ylabel("Runtime (seconds)")
     ax.set_axisbelow(True)
     ax.grid(
         axis="y",
@@ -675,7 +694,14 @@ def plot_compare_results(
         linestyle="-",
         zorder=0,
     )
-    ax.legend(title=None)
+
+    handles, labels = ax.get_legend_handles_labels()
+    if hardware:
+        # Architecture as legend title, left-aligned with the handle column.
+        legend = ax.legend(handles, labels, title=hardware, alignment="left")
+        legend._legend_box.align = "left"
+    else:
+        ax.legend(handles, labels, title=None)
     sns.despine(ax=ax)
 
     fig.tight_layout()
@@ -727,6 +753,10 @@ def main() -> None:
     if args.title:
         title = args.title
 
+    hardware = args.hardware
+    if hardware is None and args.results_group:
+        hardware = RESULTS_GROUP_HARDWARE.get(args.results_group)
+
     pipeline_col = "Pipeline timing (seconds)"
     memory_col = "Peak Memory (GB)"
     if args.compare or (
@@ -753,7 +783,7 @@ def main() -> None:
             cols = [col for col in cols if col in data.columns]
             print(data[cols].to_string(index=False))
 
-        plot_compare_results(data, title, args.output, args.show)
+        plot_compare_results(data, title, args.output, args.show, hardware=hardware)
     else:
         if "run" in data.columns and data.groupby("ranks")["run"].nunique().max() > 1:
             summary = summarize_by_rank(data, pipeline_col, memory_col)
