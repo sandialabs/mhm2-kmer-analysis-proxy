@@ -230,4 +230,3 @@ MHM2 is developed by the [ExaBiome Project](https://sites.google.com/lbl.gov/exa
 For questions about this proxy application:
 
 - Amy Powell — [ajpowel@sandia.gov](mailto:ajpowel@sandia.gov)
-- Jan Ciesko — [jciesko@sandia.gov](mailto:jciesko@sandia.gov)
