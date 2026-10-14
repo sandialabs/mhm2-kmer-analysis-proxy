@@ -1,79 +1,168 @@
-# MetaHipMer2 Kmer Analysis Proxy App
+# mhm2-kmer-analysis proxy application
 
-Performance-portable proxy application derived from [MetaHipMer2 (MHM2)](https://bitbucket.org/berkeleylab/mhm2/src/master/), an exascale *de novo* metagenome assembler developed at Lawrence Berkeley National Laboratory.
+Our performance-portable proxy application is based on the CUDA implementation of the [*k*-mer analysis routine](https://www.nature.com/articles/s41598-020-67416-5/figures/7) in [MetaHipMer2 (MHM2)](https://bitbucket.org/berkeleylab/mhm2/src/master/), an exascale *de novo* metagenome assembler.
 
-This application encapsulates the **kmer analysis stage** of the [MHM2 pipeline](https://www.nature.com/articles/s41598-020-67416-5/figures/7). Kmers are short DNA substrings of fixed length *k*, typically extracted from sequencing reads. They are a core data structure in genome assembly and many other bioinformatics workflows.
+For FASTQ/FASTA inputs and kmer length *k*, the app builds a distributed hash table (DHT) of kmers. Keys are unique kmers, and values store occurrence counts and left and right single-base extensions. 
 
-For a given set of FASTQ inputs and kmer length *k*, the app builds a distributed hash table of kmers. Keys are unique kmers; values store occurrence counts and the most probable single-base extensions. The result is a compact representation of kmer abundance and connectivity used by downstream assembly stages.
+The DHT is a compact representation of kmer abundance and connectivity used in downstream assembly stages.
 
-For background on the full MHM2 application, see the [JGI MetaHipMer page](https://jgi.doe.gov/data-and-tools/software-tools/metahipmer/) and the [MHM2 user guide](https://bitbucket.org/berkeleylab/mhm2/src/660ae5ab13f6a2c576b17d8c9925d44cffb98c6d/docs/mhm_guide.md). For Kokkos-specific design notes, see [kokkos_implementation.md](kokkos_implementation.md).
-
+For background on the full MHM2 application, see the [JGI MetaHipMer page](https://jgi.doe.gov/data-and-tools/software-tools/metahipmer/) and the [MHM2 user guide](https://bitbucket.org/berkeleylab/mhm2/src/660ae5ab13f6a2c576b17d8c9925d44cffb98c6d/docs/mhm_guide.md).
 ## Dependencies
 
 ### UPC++ (required)
 
-MHM2 and this proxy are built on [UPC++](https://bitbucket.org/berkeleylab/upcxx/wiki/Home), a partitioned global address space (PGAS) library for C++.
+MHM2 and this proxy are built on [UPC++](https://github.com/BerkeleyLab/upcxx/wiki), a partitioned global address space (PGAS) library for C++ (CPU only).
 
-- [Installation instructions](https://bitbucket.org/berkeleylab/upcxx/wiki/INSTALL)
-- [Developer guide and documentation](https://bitbucket.org/berkeleylab/upcxx/wiki/README.md)
+- [Download](https://github.com/BerkeleyLab/upcxx/releases/download/upcxx-2025.10.0/upcxx-2025.10.0.tar.gz)
+- [Installation instructions](https://github.com/BerkeleyLab/upcxx/wiki/site-docs)
+- [Programmer's Guide](https://upcxx.lbl.gov/docs/html/guide.html)
 
-UPC++ uses [GASNet](https://bitbucket.org/berkeleylab/gasnet/src/stable/) for communication. On InfiniBand systems, UPC++ typically uses MPI for process spawning; you may need to build with an MPI compiler wrapper (see [Build](#build) below).
+We used `upcxx-2025-10.10` in the work reported here. UPC++ uses "Message Passing Interface" (MPI) for process spawning, and MPI compiler wrappers are required for building (below).
+
+
+
 
 #### Example UPC++ configurations
 
-**Power9 / NVIDIA V100** ([Lassen](https://hpc.llnl.gov/hardware/compute-platforms/lassen)):
+**NVIDIA**:
 
 ```bash
+# For H100 GPU
+export CXXFLAGS="-std=c++20"
+export CXX=`which mpicxx`
+export CC=`which mpicc`
+ 
 ../configure \
-  --with-cxx="$(which mpicxx)" \
-  --with-cc="$(which mpicc)" \
-  --enable-udp \
-  --enable-mpi \
-  --enable-cuda \
-  --enable-ibv \
-  --with-cxxflags=-std=c++17 \
-  --prefix="${INSTALL_DIR}"
+--with-cxx="${CXX}" \
+--with-cc="${CC}" \
+--with-cxxflags="${CXXFLAGS}" \
+--enable-cuda \
+--disable-ibv \
+--disable-ofi \
+--with-default-network=smp \
+--with-gasnet=https://bitbucket.org/berkeleylab/gasnet/downloads/GASNet-stable.tar.gz \
+--prefix=${INSTALL_DIR}
 ```
-
-**AMD MI300A** ([El Capitan / RZAdams](https://hpc.llnl.gov/hardware/compute-platforms/rzadams)):
+**Representative CUDA environment**
 
 ```bash
-# ROCm / Cray environment
+
+module list
+Currently Loaded Modules:
+  1) cmake/3.31.8   2) git/2.41.0   3) gcc/13.3.0   4) openmpi/5.0.3   5) cuda/13.0.0
+````
+
+**AMD**:
+
+```bash
+# ROCm / Cray environment with cray-mpich
 export LD_LIBRARY_PATH="${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}"
 
+export CXXFLAGS="-std=c++20"
+#export CXXFLAGS="-std=c++17"
+export CXX=$(which mpicxx)
+export CC=$(which mpicc)
+#export CUDACXX=`which nvcc`
+ 
+ 
 ../configure \
-  --with-cxx=mpicxx \
-  --with-cc=mpicc \
-  --with-pmi-rpath \
-  --with-ofi-spawner=pmi \
-  --enable-udp \
-  --enable-hip \
-  --enable-mpi \
-  --enable-ofi \
-  --with-cxxflags=-std=c++17 \
-  --with-default-network=ofi \
-  --with-ofi-provider=cxi \
-  --prefix="${INSTALL_DIR}"
+--with-cxx="${CXX}" \
+--with-cc="${CC}" \
+--with-cxxflags="${CXXFLAGS}" \
+--disable-cuda \
+--disable-ibv \
+--enable-hip \
+--enable-ofi \
+--with-default-network=ofi \
+--prefix=${INSTALL_DIR}
+```
+**Representative AMD Environment**:
+
+```bash
+module list
+
+Currently Loaded Modules:
+  1) craype-x86-trento        5) craype/2.7.35           9) flux_wrappers/0.1  13) cray-dsmml/0.3.1     17) cray-mpich/9.0.1
+  2) libfabric/match_SHS      6) PrgEnv-cray/8.7.0      10) cmake/3.24.2       14) cray-pmi/6.1.16      18) cray-openshmemx/11.8.0
+  3) craype-network-ofi       7) xpmem/2.6.5            11) git/2.29.1         15) cce/18.0.1           19) rocm/6.3.1
+  4) perftools-base/25.09.0   8) StdEnv            (S)  12) python/3.13.2      16) cray-libsci/25.03.0
+
+  Where:
+   S:  Module is Sticky, requires --force to unload or purge
+
 ```
 
-### Kokkos (recommended)
+### Put UPC++ in `${PATH}`
 
-[Kokkos](https://kokkos.org/) provides a performance-portable programming model for GPU-accelerated kernels. This proxy includes a Kokkos implementation of key kmer-counting routines, allowing the same code to target NVIDIA and AMD GPUs while interoperating with UPC++ host code.
+Put UPC++ executables in `${PATH}`:
 
+```bash
+# export UPC++ installation point
+export UPCXX_INSTALL=${PROJECT_WORKSPACE}/upcxx_install_eldorado_cce_2000_cray_mpich_901_HIP_631_MI300A_cxx_20_2026_06_24
+ # put UPC++ executables in ${PATH}
+export PATH=${UPCXX_INSTALL}/bin:${PATH}
+```
+
+### Kokkos
+
+[Kokkos](https://kokkos.org/) is a C++ performance portability library supporting single-source implementation, meaning the developer writes code in Kokkos instead of hardware-specific versions.
 - [Kokkos releases](https://github.com/kokkos/kokkos/releases)
 - [Quick start guide](https://kokkos.org/kokkos-core-wiki/quick_start.html)
+- [Kokkos Configuration for Various Hardware Targets](https://kokkos.org/kokkos-core-wiki/get-started/configuration-guide.html)
 
-Build this app and Kokkos with the **same compiler toolchain**.
+Build this app and Kokkos with the **same compiler toolchain**, making sure to use MPI wrappers as the CXX compiler. If the specific details about your CPU target hardware are not known, then `Kokkos_ARCH_NATIVE=ON` configuration option can be used.
+
+#### Example Kokkos configurations
+
+**NVIDIA**
+
+```bash
+# h100
+export CXX=$(which mpicxx)
+
+ cmake \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DCMAKE_CXX_COMPILER=${CXX} \
+    -DKokkos_ARCH_HOPPER90=ON \
+    -DKokkos_ENABLE_SERIAL=ON \
+    -DKokkos_ENABLE_CUDA=ON \
+    -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+    -DCMAKE_BUILD_TYPE=Release ..
+```
+
+**AMD**
+
+```bash
+# MI300A APU
+export CC=$(which mpicc)
+export CXX=$(which mpicxx)
+export CXXFLAGS="-Wall -Wshadow -Wsign-compare -Wtype-limits -Wignored-qualifiers -Wempty-body -Wclobbered -Wuninitialized -Wmaybe-uninitialized"
+ 
+cmake \
+    -DCRAYPE_LINK_TYPE=dynamic \
+    -DKokkos_ENABLE_BENCHMARKS=OFF \
+    -DKokkos_ENABLE_HIP=ON \
+    -DKokkos_ARCH_AMD_GFX942_APU=ON \
+    -DKokkos_ENABLE_SERIAL=ON \
+    -DCMAKE_CXX_STANDARD="${CXXSTD}" \
+    -DCMAKE_CXX_COMPILER="${CXX}" \
+    -DCMAKE_CXX_FLAGS=${CXXFLAGS} \
+    -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+    -DCMAKE_BUILD_TYPE=Release ..
+```
 
 ## Build
 
 ### Clone the repository
 
 ```bash
-git clone https://github.com/LoganWilliams1/mhm2_kmer_analysis_v2.git
-cd mhm2_kmer_analysis_v2
+git clone https://github.com/sandialabs/mhm2-kmer-analysis-proxy.git
+cd mhm2-kmer-analysis-proxy
+# Pull in upcxx-utils directory
+git subumodule update --init --recursive
 ```
 
+## TODO HERE!
 Build and install with `scripts/build.sh` from the repository root. The script checks for UPC++, configures CMake, and installs the `mhm2` binary under `install_<BACKEND>_<KOKKOS_USE>/` in the repository (for example, `install_HIP_KOKKOS_ON/`).
 
 ```bash
