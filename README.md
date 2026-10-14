@@ -19,9 +19,6 @@ MHM2 and this proxy are built on [UPC++](https://github.com/BerkeleyLab/upcxx/wi
 
 We used `upcxx-2025-10.10` in the work reported here. UPC++ uses "Message Passing Interface" (MPI) for process spawning, and MPI compiler wrappers are required for building (below).
 
-
-
-
 #### Example UPC++ configurations
 
 **NVIDIA**:
@@ -158,39 +155,132 @@ cmake \
 ```bash
 git clone https://github.com/sandialabs/mhm2-kmer-analysis-proxy.git
 cd mhm2-kmer-analysis-proxy
-# Pull in upcxx-utils directory
+# For required submodules `contrib/seqtk`, `upcxx-utils` and `zstr`
 git subumodule update --init --recursive
 ```
 
-## TODO HERE!
-Build and install with `scripts/build.sh` from the repository root. The script checks for UPC++, configures CMake, and installs the `mhm2` binary under `install_<BACKEND>_<KOKKOS_USE>/` in the repository (for example, `install_HIP_KOKKOS_ON/`).
+
+
+Build and install with `build_kmer` script at the repository root. The script checks for UPC++, configures CMake, and installs the `mhm2` binary under `install` in the repository (for example, `install_HIP_KOKKOS_ON/`).
+
+#### Check Envirnoment
+```bash
+# check MPI wrappers
+$ which mpicxx
+... /openmpi/5.0.3/gcc/13.3.0/base/aa3z356/bin/mpicxx
+$ which mpicc
+... /openmpi/5.0.3/gcc/13.3.0/base/aa3z356/bin/mpicc
+
+# Check main dependencies, namely UPC++ and Kokkos
+
+$ echo $UPCXX_INSTALL
+... /upcxx_install_gcc_1330_openmpi_503_CUDA_1300_H100_2026_06_16
+
+$ echo $KOKKOS_INSTALL
+... /kokkos_install_h100_gcc_1330_mpi_503_cuda_1300_gpu_H100_cxx_20_2026-06-16
+
+```
+#### Build with build_kmer_proxy Script
+Build and install with `build_kmer` script at the repository root. The script checks for UPC++, configures CMake, and installs the `mhm2` binary under `install` directory in the repository. Your build directory is `.build` (for debugging purposes). Kokkos is on by default; setting `--kokkos-usage off` means building and running with the raw backend (e.g., CUDA, HIP). 
 
 ```bash
-./scripts/build.sh
-KOKKOS_USE=KOKKOS_OFF ./scripts/build.sh
-BACKEND=CPU KOKKOS_USE=KOKKOS_OFF ./scripts/build.sh
-BACKEND=CPU KOKKOS_USE=KOKKOS_ON KOKKOS_INSTALL=/path/to/kokkos-openmp ./scripts/build.sh
+./build_kmer_proxy \
+  --kokkos-installation "${KOKKOS_INSTALL}" \
+  --upcxx-installation "${UPCXX_INSTALL}" \
+  --cc "$(which mpicc)" \
+  --cxx "$(which mpicxx)" \
+  --build-type Release \
+  --cxxstd 20 \
+  --kokkos-usage on \
+  --install-prefix "${PWD}/install" \
+  --jobs 16               
 ```
 
-Set `KOKKOS_USE` to `KOKKOS_ON` (default) or `KOKKOS_OFF`, and `BACKEND` to `CUDA` (default), `HIP`, or `CPU`:
 
-| `BACKEND` | `KOKKOS_USE` | What you get |
-|-----------|--------------|--------------|
-| `CUDA` / `HIP` | `KOKKOS_OFF` | Native CUDA/HIP GPU kernels |
-| `CUDA` / `HIP` | `KOKKOS_ON` | Kokkos GPU kernels (Kokkos built with CUDA/HIP) |
-| `CPU` | `KOKKOS_OFF` | Host-only UPC++ (`kcount_cpu`); CUDA/HIP disabled in the app |
-| `CPU` | `KOKKOS_ON` | Kokkos on a **host** ExecutionSpace only; CUDA/HIP disabled in the app. `KOKKOS_INSTALL` must be a Kokkos build with OpenMP/Serial/Threads and **no** CUDA/HIP/SYCL device backend (`build.sh` checks `KokkosCore_config.h`) |
 
-Install prefixes are `install_<BACKEND>_<KOKKOS_USE>/` (for example `install_CPU_KOKKOS_OFF/`). On InfiniBand systems, the script uses `mpicxx`/`mpicc`; ensure UPC++ and Kokkos were built with the same toolchain. See the [UPC++ Linux configuration notes](https://bitbucket.org/berkeleylab/upcxx/wiki/INSTALL#markdown-header-configuration-linux).
-
-Optional first argument (default `Release`): `Debug`, `RelWithDebInfo`, `clean`, or `cleanall`.
+#### Build Script Help 
 
 ```bash
-./scripts/build.sh clean
-./scripts/build.sh cleanall
+# You are here
+
+pwd
+mhm2-kmer-analysis-proxy
+
+# Call help
+
+$ ./build_kmer_proxy --help
+Usage:
+  build_kmer_proxy [build] --kokkos-installation PATH --upcxx-installation PATH --cc COMPILER --cxx COMPILER --build-type TYPE --cxxstd STD --install-prefix PATH [options]
+  build_kmer_proxy clean
+  build_kmer_proxy cleanall
+  build_kmer_proxy --help
+
+Required arguments:
+  --kokkos-installation PATH
+      Path to the installed Kokkos prefix.
+
+  --upcxx-installation PATH
+      Path to the installed UPC++ prefix.
+
+  --cc COMPILER
+      C compiler to use.
+      Hint: this is usually mpicc.
+
+  --cxx COMPILER
+      C++ compiler to use.
+      Hint: this is usually mpicxx.
+
+  --build-type TYPE
+      CMake build type. Must be one of:
+        Debug
+        Release
+        RelWithDebInfo
+
+  --cxxstd STD
+      C++ standard to use. Must be one of:
+        17
+        20
+
+  --install-prefix PATH
+      Installation prefix for the proxy build.
+
+Optional arguments:
+  --kokkos-usage {on|off}
+      Enable or disable Kokkos usage in the proxy build.
+      Default: on
+
+  --jobs N
+      Number of parallel build jobs.
+
+  --verbose
+      Enable verbose build output.
+
+  --dry-run
+      Print the resolved configuration and build commands, but do not run them.
+
+Actions:
+  build
+      Configure, build, and install the proxy application.
+      This is the default action.
+
+  clean
+      Remove build artifacts.
+
+  cleanall
+      Remove build artifacts and installation-side CMake artifacts.
+
+  --help
+      Show this help message and exit.
+
+Notes:
+  - The Kokkos backend is determined by the installed Kokkos build.
+  - The script will derive the needed Kokkos CMake variables from
+    --kokkos-installation.
+  - UPC++ and Kokkos are assumed to already be built.
 ```
 
-## Run
+
+## Running the mhm2 Executable
 
 ### Python wrapper
 
@@ -219,6 +309,7 @@ Example with two paired libraries:
 ./scripts/mhm2.py -n 4 -p lib1_1.fastq lib1_2.fastq lib2_1.fastq lib2_2.fastq
 ```
 
+# TODO
 ### Run script
 
 For benchmark runs on El Dorado with preconfigured inputs and install paths:
@@ -250,40 +341,9 @@ Results land under `results/<BACKEND>/results_<timestamp>_<hash>/` with per-rank
 
 Aggregate and plot batch results with `scripts/process_and_visualize.py` (for example `--compare --results-group H100 --backend CUDA`). Compare charts put the hardware name first in the legend (`--hardware`, or inferred from `--results-group`).
 
-## Performance
 
-Mean execution times of *mhm2-proxy* showing Kokkos versus native kmer-analysis performance across 1–16 UPC++ ranks (error bars: three-run standard deviation). **(a)** CUDA vs Kokkos::CUDA on NVIDIA Hopper. **(b)** HIP vs Kokkos::HIP on AMD MI300a. **(c)** Host-only UPC++ vs Kokkos::OpenMP on NVIDIA Grace. **(d)** Same as (c) on AMD Epyc.
 
-![Kokkos vs native pipeline timing on Hopper, MI300a, Grace, and Epyc](docs/figures/pipeline_timing_cpu_gpu_vs_kokkos.png)
 
-On Hopper, Kokkos matches native CUDA and pulls ahead at higher rank counts; the native path pays a growing per-rank GPU first-touch cost (`cudaMalloc` / full `cudaMemset`) that Kokkos avoids. On MI300a, Kokkos is faster at all ranks, helped by unified memory and skipping the native path’s first-touch preallocation. On Grace and Epyc, Kokkos::OpenMP wins strongly at low ranks; the gap narrows as work is already split across UPC++ ranks and each OpenMP team shrinks (Epyc runs use fair-share `KOKKOS_NUM_THREADS` with `--pin=spread`). Peak memory is also substantially lower for the Kokkos CPU builds.
-
-Individual panels: [Hopper](docs/figures/pipeline_timing_cuda_vs_kokkos.png), [MI300a](docs/figures/pipeline_timing_hip_vs_kokkos.png), [Grace](docs/figures/pipeline_timing_grace_vs_kokkos.png), [Epyc](docs/figures/pipeline_timing_cpu_vs_kokkos.png).
-
-## Docker (experimental)
-
-Docker support is experimental. It is limited to a **single machine** and **CPUs only** (no GPUs).
-
-Build a MetaHipMer image directly from the Bitbucket repository without cloning it locally:
-
-```bash
-docker build -t local/mhm2:latest https://bitbucket.org/berkeleylab/mhm2.git#master
-```
-
-To force a full rebuild and pick up the latest upstream changes, add `--no-cache`:
-
-```bash
-docker build --no-cache -t local/mhm2:latest https://bitbucket.org/berkeleylab/mhm2.git#master
-```
-
-When running the container, set `--shm-size` (typically 1–2 GB per process) and mount a host directory for inputs and outputs. On a 32-process run:
-
-```bash
-docker run --shm-size=32g --volume "${datadir}:/scratch" local/mhm2:latest \
-  mhm2.py -r /scratch/arctic_sample_0.fq
-```
-
-Here `${datadir}` is the host directory containing input files; outputs are written there as well.
 
 ## Benchmark inputs
 
@@ -296,7 +356,6 @@ Here `${datadir}` is the host directory containing input files; outputs are writ
 
 | Study | Accession | Size |
 |-------|-----------|------|
-| [Gut microbiota in long-lived humans (2020)](https://pubmed.ncbi.nlm.nih.gov/32209716/) | [SRR9654970](https://www.ncbi.nlm.nih.gov/sra/?term=SRR9654970) (PRJNA553191) | 1.8 GB |
 | [Ovine gut microbes](https://pubmed.ncbi.nlm.nih.gov/24170804/) | [SRX331704](https://www.ncbi.nlm.nih.gov/sra/?term=SRX331704) (PRJNA214227) | — |
 | [Terabase-scale metagenome coassembly](https://pubmed.ncbi.nlm.nih.gov/32612216/) | [SRR5819383](https://www.ncbi.nlm.nih.gov/sra/SRR5819383) (PRJNA367436) | 15.9 GB |
 
