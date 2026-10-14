@@ -312,7 +312,7 @@ Example with two paired libraries:
 # TODO
 ### Run script
 
-For benchmark runs on El Dorado with preconfigured inputs and install paths:
+For benchmark runs on XXX with preconfigured inputs and install paths:
 
 ```bash
 ./scripts/run.sh
