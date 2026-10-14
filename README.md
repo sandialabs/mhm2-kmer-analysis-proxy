@@ -13,7 +13,7 @@ For background on the full MHM2 application, see the [JGI MetaHipMer page](https
 
 MHM2 and this proxy are built on [UPC++](https://github.com/BerkeleyLab/upcxx/wiki), a partitioned global address space (PGAS) library for C++ (CPU only).
 
-- [Download](https://github.com/BerkeleyLab/upcxx/releases/download/upcxx-2025.10.0/upcxx-2025.10.0.tar.gz)
+- [Download Current Stable Release](https://github.com/BerkeleyLab/upcxx/releases/download/upcxx-2025.10.0/upcxx-2025.10.0.tar.gz)
 - [Installation instructions](https://github.com/BerkeleyLab/upcxx/wiki/site-docs)
 - [Programmer's Guide](https://upcxx.lbl.gov/docs/html/guide.html)
 
@@ -349,17 +349,17 @@ Aggregate and plot batch results with `scripts/process_and_visualize.py` (for ex
 
 ### Synthetic reads
 
-- [ArcticSynth simulated sequences](https://portal.nersc.gov/project/hipmer/MetaHipMer_datasets_12_2019/ArcticSynth/)
+- [ArcticSynth synthetic sequences](https://portal.nersc.gov/project/hipmer/MetaHipMer_datasets_12_2019/ArcticSynth/)
 - Described in [*Terabase-scale metagenome coassembly with MetaHipMer*](https://www.nature.com/articles/s41598-020-67416-5) and [supplemental materials](https://static-content.springer.com/esm/art%3A10.1038%2Fs41598-020-67416-5/MediaObjects/41598_2020_67416_MOESM1_ESM.pdf)
 
 ### NCBI Sequence Read Archive
 
-| Study | Accession | Size |
-|-------|-----------|------|
-| [Ovine gut microbes](https://pubmed.ncbi.nlm.nih.gov/24170804/) | [SRX331704](https://www.ncbi.nlm.nih.gov/sra/?term=SRX331704) (PRJNA214227) | — |
-| [Terabase-scale metagenome coassembly](https://pubmed.ncbi.nlm.nih.gov/32612216/) | [SRR5819383](https://www.ncbi.nlm.nih.gov/sra/SRR5819383) (PRJNA367436) | 15.9 GB |
+| Study                                                                                    | Accession                                         
+|------------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| [Ovine gut microbial ecosystem (2014)](https://pubmed.ncbi.nlm.nih.gov/24170804/)        | SRX331704 (multiple entries)
+| [Terabase-scale metagenome coassembly (2020)](https://pubmed.ncbi.nlm.nih.gov/32612216/) | [SRR5819383](https://www.ncbi.nlm.nih.gov/sra/SRR5819383)
 
-Install the [SRA Toolkit](https://github.com/ncbi/sra-tools/wiki/02.-Installing-SRA-Toolkit) to download reads from the [Short Read Archive](https://www.ncbi.nlm.nih.gov/sra).
+Install the [SRA Toolkit](https://github.com/ncbi/sra-tools/wiki/02.-Installing-SRA-Toolkit) to download read sets from the [Short Read Archive](https://www.ncbi.nlm.nih.gov/sra).
 
 ## Further reading
 
