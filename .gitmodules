@@ -2,6 +2,7 @@
 	path = upcxx-utils
 	url = https://bitbucket.org/berkeleylab/upcxx-utils.git
 	branch = mhmxx
+	ignore = untracked
 [submodule "zstr"]
 	path = zstr
 	url = https://github.com/JGI-Bioinformatics/zstr.git
