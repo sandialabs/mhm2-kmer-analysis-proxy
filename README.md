@@ -97,7 +97,8 @@ export UPCXX_INSTALL=${PROJECT_WORKSPACE}/upcxx_install_eldorado_cce_2000_cray_m
 export PATH=${UPCXX_INSTALL}/bin:${PATH}
 ```
 #### Kokkos
-[Kokkos](https://kokkos.org/) is a C++ performance portability library that supports single-source implementation, allowing developers to write portable parallel code in Kokkos instead of hardware-specific versions (*e.g.*, CUDA, HIP).
+[Kokkos](https://kokkos.org/) is a C++ performance-portability library that supports a single-source programming model, allowing developers to write portable parallel code in Kokkos instead of maintaining hardware-specific implementations (*e.g.*, CUDA or HIP).
+
 - [Kokkos releases](https://github.com/kokkos/kokkos/releases)
 - [Quick start guide](https://kokkos.org/kokkos-core-wiki/quick_start.html)
 - [Kokkos Configuration for Various Hardware Targets](https://kokkos.org/kokkos-core-wiki/get-started/configuration-guide.html)
@@ -153,7 +154,7 @@ cmake \
 git clone https://github.com/sandialabs/mhm2-kmer-analysis-proxy.git
 cd mhm2-kmer-analysis-proxy
 # For required submodules `contrib/seqtk`, `upcxx-utils` and `zstr`
-git subumodule update --init --recursive
+git submodule update --init --recursive
 ```
 
 
@@ -178,7 +179,7 @@ $ echo $KOKKOS_INSTALL
 
 ```
 #### Build with `build_kmer_proxy.sh` script
-Build and install with `build_kmer.sh` script at the repository root. The script validates the specified UPC++ and Kokkos installations, resolves the requested C and C++ compilers, configures CMake, builds the proxy application, and installs it under the user-specified `--install-prefix` (the default install location is the `install` directory at the repository root). 
+Build and install with `build_kmer_proxy.sh` script at the repository root. The script validates the specified UPC++ and Kokkos installations, resolves the requested C and C++ compilers, configures CMake, builds the proxy application, and installs it under the user-specified `--install-prefix` (the default install location is the `install` directory at the repository root). 
 
 The script uses `.build` as the build directory. Kokkos is enabled by default; setting `--kokkos-usage off` builds and runs with the raw backend (*e.g.*, CUDA, HIP). 
 
@@ -250,7 +251,7 @@ The build script supports four invocations:
 
 ## Running the proxy
 
-Use either `mhm2.py` or the `mhm2` executable directly to run the proxy; both are installed under `install/bin`. `mhm2.py` is a convenience wrapper that launches the installed binary via UPC++ and manages common launch settings, while direct execution with `upcxx-run` provides full control over the runtime configuration. The table below distinguishes `mhm2.py` wrapper options from options passed directly to the `mhm2` executable. To date, this proxy application has only been tested and exercised on a single node. Representative wrapper-based and direct launches are shown below.
+Use either `mhm2.py` or the `mhm2` executable directly to run the proxy; both are installed under `install/bin`. `mhm2.py` is a convenience wrapper that launches the installed binary via UPC++ and manages common launch settings, while direct execution with `upcxx-run` provides full control over the runtime configuration. The table below distinguishes `mhm2.py` wrapper options from options passed directly to the `mhm2` executable. To date, this proxy application has only been tested and exercised on a single node. The following examples assume the current working directory is `install/bin`.
 
 ```bash
 # Run with the Python wrapper
@@ -272,6 +273,7 @@ upcxx-run \
   reads_2.fastq \
   --output "${PROXY_OUTPUT}"
 ```
+
 #### Run options
 
 | Category | Option | Description | Notes / default |
