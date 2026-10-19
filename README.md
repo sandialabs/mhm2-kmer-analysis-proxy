@@ -1,16 +1,16 @@
-# mhm2-kmer-analysis-proxy
+## mhm2-kmer-analysis-proxy
 
 This performance-portable proxy application is based on the CUDA implementation of the [*k*-mer analysis routine](https://www.nature.com/articles/s41598-020-67416-5/figures/7) in [MetaHipMer2 (MHM2)](https://bitbucket.org/berkeleylab/mhm2/src/master/), an exascale *de novo* metagenome assembler.
 
-For FASTQ or FASTA input sequences and *k*-mer length *k*, the application constructs a distributed hash table (DHT) of *k*-mers. The keys in the table are unique *k*-mers, and values store occurrence counts together with left and right single-base extensions. 
+Given FASTQ or FASTA input sequences and *k*-mer length *k*, the application constructs a distributed hash table (DHT) of *k*-mers. The keys in the table are unique *k*-mers, and values store occurrence counts together with left and right single-base extensions. 
 
 This DHT is a compact representation of *k*-mer abundance and connectivity used in downstream assembly stages.
 
 ## Dependencies
 
-### UPC++ (required)
+#### UPC++ (required)
 
-MHM2 and this proxy are built on [UPC++](https://github.com/BerkeleyLab/upcxx/wiki), a C++ library for imppartitioned global address space (PGAS) library for C++ (CPU only).
+MHM2 and this proxy are built on [UPC++](https://github.com/BerkeleyLab/upcxx/wiki), a C++ library for partitioned global address space (PGAS). UPC++ is for CPU only.
 
 - [Download Current Stable Release](https://github.com/BerkeleyLab/upcxx/releases/download/upcxx-2025.10.0/upcxx-2025.10.0.tar.gz)
 - [Installation instructions](https://github.com/BerkeleyLab/upcxx/wiki/site-docs)
@@ -41,7 +41,7 @@ export CC=`which mpicc`
 ```
 **Representative CUDA environment**
 
-```bash
+```text
 
 module list
 Currently Loaded Modules:
@@ -72,9 +72,9 @@ export CC=$(which mpicc)
 --with-default-network=ofi \
 --prefix=${INSTALL_DIR}
 ```
-**Representative AMD Environment**:
+**Representative AMD environment**:
 
-```bash
+```text
 module list
 
 Currently Loaded Modules:
@@ -85,11 +85,9 @@ Currently Loaded Modules:
 
   Where:
    S:  Module is Sticky, requires --force to unload or purge
-
 ```
 
-### Put UPC++ in `${PATH}`
-
+#### Put UPC++ in `${PATH}`
 Put UPC++ executables in `${PATH}`:
 
 ```bash
@@ -98,22 +96,22 @@ export UPCXX_INSTALL=${PROJECT_WORKSPACE}/upcxx_install_eldorado_cce_2000_cray_m
  # put UPC++ executables in ${PATH}
 export PATH=${UPCXX_INSTALL}/bin:${PATH}
 ```
-
-### Kokkos
-
-[Kokkos](https://kokkos.org/) is a C++ performance portability library supporting single-source implementation, meaning the developer writes code in Kokkos instead of hardware-specific versions.
+#### Kokkos
+[Kokkos](https://kokkos.org/) is a C++ performance portability library that supports single-source implementation, allowing developers to write portable parallel code in Kokkos instead of hardware-specific versions (*e.g.*, CUDA, HIP).
 - [Kokkos releases](https://github.com/kokkos/kokkos/releases)
 - [Quick start guide](https://kokkos.org/kokkos-core-wiki/quick_start.html)
 - [Kokkos Configuration for Various Hardware Targets](https://kokkos.org/kokkos-core-wiki/get-started/configuration-guide.html)
 
-Build this app and Kokkos with the **same compiler toolchain**, making sure to use MPI wrappers as the CXX compiler. If the specific details about your CPU target hardware are not known, then `Kokkos_ARCH_NATIVE=ON` configuration option can be used.
+Build this application and Kokkos with the **same compiler toolchain**, using MPI wrapper compilers for the host C and C++ compilers. Set `KOKKOS_INSTALL` to the Kokkos installation root (*i.e.*, the installation prefix passed to Kokkos at install time).
+
+If the target CPU microarchitecture is not known, `Kokkos_ARCH_NATIVE=ON` can be used during Kokkos configuration.
 
 #### Example Kokkos configurations
 
 **NVIDIA**
 
 ```bash
-# h100
+# NVIDIA h100
 export CXX=$(which mpicxx)
 
  cmake \
@@ -129,7 +127,7 @@ export CXX=$(which mpicxx)
 **AMD**
 
 ```bash
-# MI300A APU
+# AMD MI300A APU
 export CC=$(which mpicc)
 export CXX=$(which mpicxx)
 export CXXFLAGS="-Wall -Wshadow -Wsign-compare -Wtype-limits -Wignored-qualifiers -Wempty-body -Wclobbered -Wuninitialized -Wmaybe-uninitialized"
@@ -149,7 +147,7 @@ cmake \
 
 ## Build
 
-### Clone the repository
+#### Clone the repository
 
 ```bash
 git clone https://github.com/sandialabs/mhm2-kmer-analysis-proxy.git
@@ -159,218 +157,161 @@ git subumodule update --init --recursive
 ```
 
 
+#### Check environment
 
-Build and install with `build_kmer` script at the repository root. The script checks for UPC++, configures CMake, and installs the `mhm2` binary under `install` in the repository (for example, `install_HIP_KOKKOS_ON/`).
+Before building, verify that the MPI wrapper compilers are available in `PATH` and that you know the installation prefixes for UPC++ and Kokkos.
 
-#### Check Envirnoment
 ```bash
-# check MPI wrappers
+# check MPI wrapper compilers
 $ which mpicxx
-... /openmpi/5.0.3/gcc/13.3.0/base/aa3z356/bin/mpicxx
+# /path/to/mpicxx
 $ which mpicc
-... /openmpi/5.0.3/gcc/13.3.0/base/aa3z356/bin/mpicc
+# /path/to/mpicc
 
-# Check main dependencies, namely UPC++ and Kokkos
+# Check installation prefixes for the main dependencies
 
 $ echo $UPCXX_INSTALL
-... /upcxx_install_gcc_1330_openmpi_503_CUDA_1300_H100_2026_06_16
+# path/to/upcxx
 
 $ echo $KOKKOS_INSTALL
-... /kokkos_install_h100_gcc_1330_mpi_503_cuda_1300_gpu_H100_cxx_20_2026-06-16
+# path/to/kokkos
 
 ```
-#### Build with build_kmer_proxy Script
-Build and install with `build_kmer` script at the repository root. The script checks for UPC++, configures CMake, and installs the `mhm2` binary under `install` directory in the repository. Your build directory is `.build` (for debugging purposes). Kokkos is on by default; setting `--kokkos-usage off` means building and running with the raw backend (e.g., CUDA, HIP). 
+#### Build with `build_kmer_proxy.sh` script
+Build and install with `build_kmer.sh` script at the repository root. The script validates the specified UPC++ and Kokkos installations, resolves the requested C and C++ compilers, configures CMake, builds the proxy application, and installs it under the user-specified `--install-prefix` (the default install location is the `install` directory at the repository root). 
 
+The script uses `.build` as the build directory. Kokkos is enabled by default; setting `--kokkos-usage off` builds and runs with the raw backend (*e.g.*, CUDA, HIP). 
+
+[!NOTE]
+If oneAPI toolchain and SYCL build instructions are needed, contact the corresponding author.
+
+#### Build script help 
+
+```bash
+# From repository root
+./build_kmer_proxy --help
+```
+
+#### Usage
+
+The build script supports four invocations:
+
+```text
+./build_kmer_proxy.sh [build] --kokkos-installation PATH --upcxx-installation PATH --cc <COMPILER --cxx COMPILER --build-type TYPE --cxxstd STD --install-prefix PATH [options]
+./build_kmer_proxy.sh clean
+./build_kmer_proxy.sh cleanall
+./build_kmer_proxy.sh --help
+```
+#### Build script arguments
+
+#### Required options
+
+| Option | Value | Description | Allowed values / notes |
+|---|---|---|---|
+| `--kokkos-installation` | `PATH` | Path to the installed Kokkos prefix. | Kokkos must already be built and installed. |
+| `--upcxx-installation` | `PATH` | Path to the installed UPC++ prefix. | UPC++ must already be built and installed. |
+| `--cc` | `COMPILER` | C compiler to use. | Usually `mpicc`. |
+| `--cxx` | `COMPILER` | C++ compiler to use. | Usually `mpicxx`. |
+| `--build-type` | `TYPE` | CMake build type. | `Debug`, `Release`, or `RelWithDebInfo` |
+| `--cxxstd` | `STD` | C++ standard to use. | `17` or `20` |
+| `--install-prefix` | `PATH` | Installation prefix for the proxy build. | Install destination for the built proxy application. |
+
+#### Optional options
+
+| Option | Value | Description | Default / notes |
+|---|---|---|---|
+| `--kokkos-usage` | `on\|off` | Enable or disable Kokkos usage in the proxy build. | Default: `on` |
+| `--jobs` | `N` | Number of parallel build jobs. | Must be a positive integer. |
+| `--verbose` | — | Enable verbose build output. |  |
+| `--dry-run` | — | Print the resolved configuration and build commands, but do not run them. |  |
+
+#### Actions
+
+| Action | Description | Notes |
+|---|---|---|
+| `build` | Configure, build, and install the proxy application. | Default action. |
+| `clean` | Remove build artifacts. |  |
+| `cleanall` | Remove build artifacts and installation-side CMake artifacts. |  |
+| `--help` | Show the help message and exit. |  |
+
+
+
+#### Example build command
 ```bash
 ./build_kmer_proxy \
-  --kokkos-installation "${KOKKOS_INSTALL}" \
-  --upcxx-installation "${UPCXX_INSTALL}" \
-  --cc "$(which mpicc)" \
-  --cxx "$(which mpicxx)" \
+  --kokkos-installation /path/to/kokkos \
+  --upcxx-installation /path/to/upcxx \
+  --cc mpicc \
+  --cxx mpicxx \
   --build-type Release \
   --cxxstd 20 \
-  --kokkos-usage on \
-  --install-prefix "${PWD}/install" \
-  --jobs 16               
+  --install-prefix /path/to/install
 ```
 
+## Running the proxy
 
-
-#### Build Script Help 
+Use either `mhm2.py` or the `mhm2` executable directly to run the proxy; both are installed under `install/bin`. `mhm2.py` is a convenience wrapper that launches the installed binary via UPC++ and manages common launch settings, while direct execution with `upcxx-run` provides full control over the runtime configuration. The table below distinguishes `mhm2.py` wrapper options from options passed directly to the `mhm2` executable. To date, this proxy application has only been tested and exercised on a single node. Representative wrapper-based and direct launches are shown below.
 
 ```bash
-# You are here
-
-pwd
-mhm2-kmer-analysis-proxy
-
-# Call help
-
-$ ./build_kmer_proxy --help
-Usage:
-  build_kmer_proxy [build] --kokkos-installation PATH --upcxx-installation PATH --cc COMPILER --cxx COMPILER --build-type TYPE --cxxstd STD --install-prefix PATH [options]
-  build_kmer_proxy clean
-  build_kmer_proxy cleanall
-  build_kmer_proxy --help
-
-Required arguments:
-  --kokkos-installation PATH
-      Path to the installed Kokkos prefix.
-
-  --upcxx-installation PATH
-      Path to the installed UPC++ prefix.
-
-  --cc COMPILER
-      C compiler to use.
-      Hint: this is usually mpicc.
-
-  --cxx COMPILER
-      C++ compiler to use.
-      Hint: this is usually mpicxx.
-
-  --build-type TYPE
-      CMake build type. Must be one of:
-        Debug
-        Release
-        RelWithDebInfo
-
-  --cxxstd STD
-      C++ standard to use. Must be one of:
-        17
-        20
-
-  --install-prefix PATH
-      Installation prefix for the proxy build.
-
-Optional arguments:
-  --kokkos-usage {on|off}
-      Enable or disable Kokkos usage in the proxy build.
-      Default: on
-
-  --jobs N
-      Number of parallel build jobs.
-
-  --verbose
-      Enable verbose build output.
-
-  --dry-run
-      Print the resolved configuration and build commands, but do not run them.
-
-Actions:
-  build
-      Configure, build, and install the proxy application.
-      This is the default action.
-
-  clean
-      Remove build artifacts.
-
-  cleanall
-      Remove build artifacts and installation-side CMake artifacts.
-
-  --help
-      Show this help message and exit.
-
-Notes:
-  - The Kokkos backend is determined by the installed Kokkos build.
-  - The script will derive the needed Kokkos CMake variables from
-    --kokkos-installation.
-  - UPC++ and Kokkos are assumed to already be built.
+# Run with the Python wrapper
+./mhm2.py \
+  --procs 1 \
+  -p seqs_1.fastq seqs_2.fastq
 ```
-
-
-## Running the mhm2 Executable
-
-### Python wrapper
-
-`scripts/mhm2.py` launches the installed `mhm2` binary via UPC++. A minimal run requires the number of UPC++ processes and at least one FASTQ input:
 
 ```bash
-./scripts/mhm2.py -n 1 -p seqs_1.fastq seqs_2.fastq
+# Run the executable directly
+upcxx-run \
+  -n ${NUM_RANKS} \
+  -shared-heap "250MB" \
+  -network=smp \
+  ./mhm2 \
+  --pin=none \
+  --paired-reads \
+  reads_1.fastq \
+  reads_2.fastq \
+  --output "${PROXY_OUTPUT}"
 ```
-
 #### Run options
 
-| Option | Description |
-|--------|-------------|
-| `-n INT` | Number of UPC++ processes (**required**) |
-| `-N INT` | Number of nodes (default: 1) |
-| `-p FILE ...` | Separate paired-end reads; each R1 file must be immediately followed by its R2 mate |
-| `-r FILE ...` | Interleaved paired-end reads |
-| `-u FILE ...` | Unpaired reads |
-| `-k INT` | Kmer length (default: 21) |
-| `-o STRING` | Output directory (default: `mhm2-run-<READS>-n<PROCS>-N<NODES>-YYMMDDhhmmss-<JOBID>`) |
-| `--use-qf=BOOL` | **Non-Kokkos GPU builds only.** When true, reduces GPU memory use at the cost of negligible variation in kmer counts. See [kokkos_implementation.md](kokkos_implementation.md). |
+| Category | Option | Description | Notes / default |
+|---|---|---|---|
+| Wrapper | `--auto-resume` | Automatically resume after a failure. |  |
+| Wrapper | `--shared-heap SHARED_HEAP` | Shared heap size as a percentage of memory or in MB. | Examples: `10%`, `250MB` |
+| Wrapper | `--procs PROCS` | Total number of UPC++ processes. | Required for controlled launch configuration |
+| Wrapper | `--nodes NODES` | Override the detected number of nodes. | Default: detected from the job environment |
+| Wrapper | `--gasnet-stats` | Collect GASNet communication statistics. |  |
+| Wrapper | `--gasnet-trace` | Collect GASNet trace output in separate files. |  |
+| Wrapper | `--preproc PREPROC` | Comma-separated preprocessors and options, or options to `upcxx-run` before the binary. |  |
+| Wrapper | `--binary BINARY` | File name for the UPC++ binary to launch. | Default: `mhm2` |
+| Binary | `-r`, `--reads FILE ...` | Interleaved paired reads in FASTQ format. | At least one of `-r`, `-p`, or `-u` must be provided |
+| Binary | `-p`, `--paired-reads FILE ...` | Separate paired-end reads in FASTQ format. | Each R1 file must be immediately followed by its matching R2 file |
+| Binary | `-u`, `--unpaired-reads FILE ...` | Unpaired or single-end reads in FASTQ format. |  |
+| Binary | `-k`, `--kmer-lens INT` | K-mer length. | Default: `21` |
+| Binary | `-o`, `--output DIR` | Output directory. | If not specified, the binary creates a default output directory name |
+| Binary | `--adapter-refs FILE` | Adapter reference sequences in FASTA format for trimming. |  |
+| Binary | `--progress` | Show progress bars for operations. |  |
+| Binary | `-v`, `--verbose` | Enable verbose output. |  |
+| Binary | `--use-qf` | Use a quotient filter to reduce memory usage at the cost of slower processing. | Applies only to GPU builds |
 
-Example with two paired libraries:
-
-```bash
-./scripts/mhm2.py -n 4 -p lib1_1.fastq lib1_2.fastq lib2_1.fastq lib2_2.fastq
-```
-
-# TODO
-### Run script
-
-For benchmark runs on XXX with preconfigured inputs and install paths:
-
-```bash
-./scripts/run.sh
-RUN_BENCHMARK_LOOP=1 ./scripts/run.sh
-BACKEND=CPU KOKKOS_USE=KOKKOS_OFF RUN_BENCHMARK_LOOP=1 ./scripts/run.sh
-# Kokkos::OpenMP: --pin=spread; fair-share KOKKOS_NUM_THREADS=clamp(cores/ranks,2,16); OMP_* unset.
-BACKEND=CPU KOKKOS_USE=KOKKOS_ON RUN_BENCHMARK_LOOP=1 ./scripts/run.sh
-# Optional: OMP_NUM_THREADS_FIXED=4 MHM2_PIN=none ...
-```
-
-Environment variables:
-
-| Variable | Description |
-|----------|-------------|
-| `KOKKOS_USE` | `KOKKOS_ON` (default) or `KOKKOS_OFF` |
-| `BACKEND` | `CUDA` (default), `HIP`, or `CPU` (disables CUDA/HIP in the app) |
-| `NUM_RANKS` | Number of UPC++ ranks (default: 2) |
-| `NUM_RUNS` | Replicates per rank count (default: 3) |
-| `RUN_BENCHMARK_LOOP` | If set, sweep ranks 1, 2, 4, …, 16 |
-| `OMP_THREADS_PER_RANK` | CPU + `KOKKOS_ON`: max OpenMP threads per rank (default: `16`; fair-share uses `min(max, cores/ranks)`) |
-| `OMP_THREADS_MIN` | CPU + `KOKKOS_ON`: min OpenMP threads per rank after fair-share (default: `2`) |
-| `OMP_NUM_THREADS_FIXED` | CPU + `KOKKOS_ON`: if set, use this exact team size at every rank count (skip fair-share) |
-| `MHM2_PIN` | CPU + `KOKKOS_ON`: default `spread` (partition physical cores across local ranks before Kokkos/OpenMP init). Other backends default to `none`. |
-
-Results land under `results/<BACKEND>/results_<timestamp>_<hash>/` with per-rank dirs named `KOKKOS_{ON|OFF}_{BACKEND}_ranks_<N>` (for example `KOKKOS_ON_CPU_ranks_4/`). Each run writes `proxy_results_summary.csv` (read counts, kmer statistics, peak memory, timing).
-
-Aggregate and plot batch results with `scripts/process_and_visualize.py` (for example `--compare --results-group H100 --backend CUDA`). Compare charts put the hardware name first in the legend (`--hardware`, or inferred from `--results-group`).
+[!NOTE] `mhm2.py` is a general MHM2 launcher. When used with this proxy application, it may still perform post-run checks intended for full assembly workflows.
 
 
+## Inputs
 
-
-
-## Benchmark inputs
-
-### Synthetic reads
+#### Synthetic reads
 
 - [ArcticSynth synthetic sequences](https://portal.nersc.gov/project/hipmer/MetaHipMer_datasets_12_2019/ArcticSynth/)
 - Described in [*Terabase-scale metagenome coassembly with MetaHipMer*](https://www.nature.com/articles/s41598-020-67416-5) and [supplemental materials](https://static-content.springer.com/esm/art%3A10.1038%2Fs41598-020-67416-5/MediaObjects/41598_2020_67416_MOESM1_ESM.pdf)
 
-### NCBI Sequence Read Archive
+#### NCBI Sequence Read Archive
 
-| Study                                                                                    | Accession                                         
+| Study                                                                                    | SRA Archive Accession Number                                     |   
 |------------------------------------------------------------------------------------------|------------------------------------------------------------------|
 | [Ovine gut microbial ecosystem (2014)](https://pubmed.ncbi.nlm.nih.gov/24170804/)        | SRX331704 (multiple entries)
 | [Terabase-scale metagenome coassembly (2020)](https://pubmed.ncbi.nlm.nih.gov/32612216/) | [SRR5819383](https://www.ncbi.nlm.nih.gov/sra/SRR5819383)
 
-Install the [SRA Toolkit](https://github.com/ncbi/sra-tools/wiki/02.-Installing-SRA-Toolkit) to download read sets from the [Short Read Archive](https://www.ncbi.nlm.nih.gov/sra).
-
-## Further reading
-
-MHM2 runs efficiently on single nodes and at exascale, scaling to terabase-sized metagenome coassemblies. Key publications:
-
-- [E. Georganas et al., "Extreme Scale De Novo Metagenome Assembly," SC18, 2018.](https://ieeexplore.ieee.org/document/8665813)
-- [Hofmeyr, S. et al., "Terabase-scale metagenome coassembly with MetaHipMer," *Scientific Reports*, 2020.](https://www.nature.com/articles/s41598-020-67416-5)
-- [Awan, M.G. et al., "ADEPT: a domain independent sequence alignment strategy for gpu architectures," *BMC Bioinformatics*, 2020.](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-020-03720-1)
-- [Muaaz Awan et al., "Accelerating large scale de novo metagenome assembly using GPUs," SC 2021.](https://dl.acm.org/doi/pdf/10.1145/3458817.3476212)
-- [F. Meyer et al., "Critical Assessment of Metagenome Interpretation: the second round of challenges," *Nature Methods*, 2022.](https://www.nature.com/articles/s41592-022-01431-4) — MetaHipMer ranked first for quality on two of three CAMI2 datasets.
-
-MHM2 is developed by the [ExaBiome Project](https://sites.google.com/lbl.gov/exabiome/) and supported by the [Exascale Computing Project](https://www.exascaleproject.org) (17-SC-20-SC).
+Install the [SRA Toolkit](https://github.com/ncbi/sra-tools/wiki/02.-Installing-SRA-Toolkit) to download read sets from the [Sequence Read Archive](https://www.ncbi.nlm.nih.gov/sra).
 
 ## Point of contact
 
