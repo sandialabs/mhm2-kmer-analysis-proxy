@@ -162,7 +162,14 @@ safe_clean_action() {
 }
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="$ROOT_DIR/.build"
+#BUILD_DIR="$ROOT_DIR/.build"
+
+if [[ -d "$ROOT_DIR/build" ]]; then
+  BUILD_DIR="$ROOT_DIR/build"
+else
+  BUILD_DIR="$ROOT_DIR/.build"
+fi
+
 ACTION="build"
 
 KOKKOS_INSTALLATION=""
@@ -333,7 +340,9 @@ rm -rf "$INSTALL_PREFIX/cmake"
 export PATH="$UPCXX_INSTALLATION/bin:$PATH"
 
 CMAKE_CMD=(
-  cmake "$ROOT_DIR"
+  cmake
+  -S "$ROOT_DIR"
+  -B "$BUILD_DIR"
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
   -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
   -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX"
