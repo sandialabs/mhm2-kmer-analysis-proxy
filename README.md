@@ -306,14 +306,13 @@ upcxx-run \
 - [ArcticSynth synthetic sequences](https://portal.nersc.gov/project/hipmer/MetaHipMer_datasets_12_2019/ArcticSynth/)
 - Described in [*Terabase-scale metagenome coassembly with MetaHipMer*](https://www.nature.com/articles/s41598-020-67416-5) and [supplemental materials](https://static-content.springer.com/esm/art%3A10.1038%2Fs41598-020-67416-5/MediaObjects/41598_2020_67416_MOESM1_ESM.pdf)
 
-#### NCBI Sequence Read Archive
+#### NCBI Sequence Read Archive (SRA)
 
 | Study                                                                                    | SRA Archive Accession Number                                     |   
 |------------------------------------------------------------------------------------------|------------------------------------------------------------------|
 | [Ovine gut microbial ecosystem (2014)](https://pubmed.ncbi.nlm.nih.gov/24170804/)        | SRX331704 (multiple entries)
 | [Terabase-scale metagenome coassembly (2020)](https://pubmed.ncbi.nlm.nih.gov/32612216/) | [SRR5819383](https://www.ncbi.nlm.nih.gov/sra/SRR5819383)
 
-Install the [SRA Toolkit](https://github.com/ncbi/sra-tools/wiki/02.-Installing-SRA-Toolkit) to download read sets from the [Sequence Read Archive](https://www.ncbi.nlm.nih.gov/sra).
 
 ## Point of contact
 
