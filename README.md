@@ -1,17 +1,16 @@
-# mhm2-kmer-analysis proxy application
+# mhm2-kmer-analysis-proxy
 
-Our performance-portable proxy application is based on the CUDA implementation of the [*k*-mer analysis routine](https://www.nature.com/articles/s41598-020-67416-5/figures/7) in [MetaHipMer2 (MHM2)](https://bitbucket.org/berkeleylab/mhm2/src/master/), an exascale *de novo* metagenome assembler.
+This performance-portable proxy application is based on the CUDA implementation of the [*k*-mer analysis routine](https://www.nature.com/articles/s41598-020-67416-5/figures/7) in [MetaHipMer2 (MHM2)](https://bitbucket.org/berkeleylab/mhm2/src/master/), an exascale *de novo* metagenome assembler.
 
-For FASTQ/FASTA inputs and kmer length *k*, the app builds a distributed hash table (DHT) of kmers. Keys are unique kmers, and values store occurrence counts and left and right single-base extensions. 
+For FASTQ or FASTA input sequences and *k*-mer length *k*, the application constructs a distributed hash table (DHT) of *k*-mers. The keys in the table are unique *k*-mers, and values store occurrence counts together with left and right single-base extensions. 
 
-The DHT is a compact representation of kmer abundance and connectivity used in downstream assembly stages.
+This DHT is a compact representation of *k*-mer abundance and connectivity used in downstream assembly stages.
 
-For background on the full MHM2 application, see the [JGI MetaHipMer page](https://jgi.doe.gov/data-and-tools/software-tools/metahipmer/) and the [MHM2 user guide](https://bitbucket.org/berkeleylab/mhm2/src/660ae5ab13f6a2c576b17d8c9925d44cffb98c6d/docs/mhm_guide.md).
 ## Dependencies
 
 ### UPC++ (required)
 
-MHM2 and this proxy are built on [UPC++](https://github.com/BerkeleyLab/upcxx/wiki), a partitioned global address space (PGAS) library for C++ (CPU only).
+MHM2 and this proxy are built on [UPC++](https://github.com/BerkeleyLab/upcxx/wiki), a C++ library for imppartitioned global address space (PGAS) library for C++ (CPU only).
 
 - [Download Current Stable Release](https://github.com/BerkeleyLab/upcxx/releases/download/upcxx-2025.10.0/upcxx-2025.10.0.tar.gz)
 - [Installation instructions](https://github.com/BerkeleyLab/upcxx/wiki/site-docs)
