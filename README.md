@@ -101,9 +101,9 @@ export PATH=${UPCXX_INSTALL}/bin:${PATH}
 
 - [Kokkos releases](https://github.com/kokkos/kokkos/releases)
 - [Quick start guide](https://kokkos.org/kokkos-core-wiki/quick_start.html)
-- [Kokkos Configuration for Various Hardware Targets](https://kokkos.org/kokkos-core-wiki/get-started/configuration-guide.html)
+- [Kokkos Configuration Guide](https://kokkos.org/kokkos-core-wiki/get-started/configuration-guide.html)
 
-Build this application and Kokkos with the **same compiler toolchain**, using MPI wrapper compilers for the host C and C++ compilers. Set `KOKKOS_INSTALL` to the Kokkos installation root (*i.e.*, the installation prefix passed to Kokkos at install time).
+Build this application and Kokkos with the **same compiler toolchain**, using MPI wrapper compilers for the host C and C++ compilers. Set `KOKKOS_INSTALL` to the Kokkos installation root (*i.e.*, the installation prefix passed to Kokkos at install time). Please see the [Kokkos Configuration Guide](https://kokkos.org/kokkos-core-wiki/get-started/configuration-guide.html) for your target architecture.
 
 If the target CPU microarchitecture is not known, `Kokkos_ARCH_NATIVE=ON` can be used during Kokkos configuration.
 
